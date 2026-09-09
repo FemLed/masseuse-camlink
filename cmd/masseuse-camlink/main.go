@@ -115,6 +115,13 @@ func (a *policyAttester) Verify(ctx context.Context, origin string) (*attest.Res
 		return nil, err
 	}
 	a.log.Info("enclave verified", "origin", origin, "image", res.ImageDigest, "instance", res.InstanceID, "dbgstat", res.DbgStat)
+	// Where the attested image was built from, and the one command that
+	// checks it (VERIFY.md, "The enclave your camera streams to").
+	if res.Source != nil {
+		a.log.Info("enclave source", "image", res.ImageDigest, "source", res.Source.String(), "registry", res.Source.Repo, "verify", res.Source.VerifyCommand(res.ImageDigest))
+	} else {
+		a.log.Warn("enclave source unpublished", "image", res.ImageDigest, "note", "the policy lists no public build for this digest; the attestation holds but the source cannot be checked")
+	}
 	return res, nil
 }
 
