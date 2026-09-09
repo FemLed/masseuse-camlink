@@ -145,9 +145,11 @@ told to expect and sends `READY`, or `RESET` and closes.
 Streams are opened by the gateway only (odd ids, starting at 1). The
 connector dials the `host:port` in `OPEN` and answers `ACCEPT` or `REFUSE`.
 The connector refuses anything that is not the single private-network target
-it was given for this session (a `host:port` whose host is an RFC 1918,
-link-local, or loopback literal, or a `.local`/unqualified name); it never
-becomes a general proxy. The gateway pings every 30 s.
+of this tunnel: the first `host:port` it accepts is locked in, and a host is
+only accepted when it is an RFC 1918, link-local or loopback literal, or a
+name every address of which resolves to such an address (the connector then
+dials the address it checked, not the name). It never becomes a general
+proxy. The gateway pings every 30 s.
 
 ## 5. Enclave control (loopback only)
 
