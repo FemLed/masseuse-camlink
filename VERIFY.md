@@ -11,8 +11,9 @@ carries:
 - container images at `ghcr.io/femled/masseuse-camlink`, signed keyless by
   digest, with SBOMs and their own SLSA container provenance.
 
-`scripts/verify-release.sh vX.Y.Z` runs the release checks below (1 to 3);
-`scripts/verify-enclave.sh` runs the enclave check (4).
+`sh scripts/verify-release.sh vX.Y.Z` runs the release checks below (1 to 3);
+`sh scripts/verify-enclave.sh` runs the enclave check (4). (Both are plain
+POSIX sh; the repository stores them without the executable bit.)
 
 ## 1. Signature
 
@@ -138,7 +139,7 @@ cosign verify ghcr.io/femled/masseuse-video-tee@sha256:<digest> \
 
 proves that the code at that tag is what ran on the frames and the audio. The connector
 prints exactly this `slsa-verifier` line (`enclave source ... verify=`) each
-time it dials, with the digest it just verified; `scripts/verify-enclave.sh`
+time it dials, with the digest it just verified; `sh scripts/verify-enclave.sh`
 runs both checks for every digest the policy currently allows, and says so
 when a digest has no published build (one from before the source was
 public). A digest that is not in the policy at all is one the connector
