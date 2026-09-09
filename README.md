@@ -23,6 +23,9 @@ docker run -d --name masseuse-camlink --restart unless-stopped --network host \
 docker logs masseuse-camlink
 ```
 
+With Go installed, `go install github.com/FemLed/masseuse-camlink/cmd/masseuse-camlink@latest`
+builds the same code from the module proxy.
+
 Every release is reproducible and signed; see [VERIFY.md](VERIFY.md).
 
 ## Use
