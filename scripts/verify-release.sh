@@ -79,9 +79,12 @@ if command -v go >/dev/null 2>&1; then
   echo "==> 5. rebuild the gateway from the module proxy and compare (VERIFY.md 3)"
   export GOTOOLCHAIN=go1.27.1 CGO_ENABLED=0 GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org GOFLAGS=
   # A scratch GOPATH so the cross-compiled binary has a known home (GOBIN is
-  # not allowed for cross builds); the module cache stays shared.
+  # not allowed for cross builds); the module cache stays shared, so it is
+  # resolved before GOPATH is overridden (a shell applies the assignments
+  # before a command left to right).
   work="$(mktemp -d)"
-  GOPATH="$work/gopath" GOMODCACHE="$(go env GOMODCACHE)" GOOS=linux GOARCH=amd64 \
+  modcache="$(go env GOMODCACHE)"
+  GOPATH="$work/gopath" GOMODCACHE="$modcache" GOOS=linux GOARCH=amd64 \
     go install -trimpath -buildvcs=false -ldflags='-s -w -buildid=' \
     "github.com/FemLed/masseuse-camlink/cmd/masseuse-camlink-gateway@$tag"
   built=$(find "$work/gopath/bin" -type f -name masseuse-camlink-gateway | head -n 1)
@@ -110,6 +113,7 @@ if command -v go >/dev/null 2>&1; then
     echo "    MISMATCH: rebuilt $rebuilt, in archive $published" >&2
     exit 1
   fi
+  chmod -R u+w "$work" 2>/dev/null || true
   rm -rf "$work"
 else
   echo "==> 5-6. rebuild: skipped (no go)"
