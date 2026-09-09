@@ -1,26 +1,39 @@
-// Package buildinfo reports the module version stamped into the binary.
-//
-// There is deliberately no -X ldflag: a release built by goreleaser from the
-// module proxy and a binary produced by `go install
-// github.com/FemLed/masseuse-camlink/cmd/...@vX.Y.Z` both carry the tag in
-// their embedded module information, so they report the same version and,
-// with the same toolchain and flags, are byte-for-byte identical
-// (VERIFY.md).
+// Package buildinfo reports the version of this module and the Go toolchain
+// from the build information Go embeds, so that there is nothing to pass
+// with -ldflags and a release is byte-for-byte what `go install ...@vX.Y.Z`
+// produces (VERIFY.md).
 package buildinfo
 
 import "runtime/debug"
 
-// Version is the module version the binary was built from ("v0.1.0"), or
-// "(devel)" for a build from a working tree.
+// ModulePath is this module's path.
+const ModulePath = "github.com/FemLed/masseuse-camlink"
+
+// Version is the version of this module in the running binary: the main
+// module's version for `go install ...@vX.Y.Z`; this module's version as a
+// dependency when the binary was built the way goreleaser's proxy mode does
+// (a scratch module requiring this one at the tag); "(devel)" for a build
+// from a working tree.
 func Version() string {
 	info, ok := debug.ReadBuildInfo()
-	if !ok || info.Main.Version == "" {
+	if !ok {
 		return "(devel)"
 	}
-	return info.Main.Version
+	if info.Main.Path == ModulePath && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	for _, dep := range info.Deps {
+		if dep.Path == ModulePath {
+			if dep.Replace != nil {
+				return "(devel)"
+			}
+			return dep.Version
+		}
+	}
+	return "(devel)"
 }
 
-// GoVersion is the toolchain that compiled the binary.
+// GoVersion is the toolchain that built the binary.
 func GoVersion() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
