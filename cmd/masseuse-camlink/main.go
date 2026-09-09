@@ -125,8 +125,9 @@ type manager struct {
 	log    *slog.Logger
 	dialer *tunnel.Dialer
 
-	mu      sync.Mutex
-	tunnels map[string]*active // by session id
+	mu       sync.Mutex
+	tunnels  map[string]*active // by session id
+	lastCode string             // the code last shown, so a re-send is not printed twice
 }
 
 type active struct {
@@ -134,7 +135,17 @@ type active struct {
 	cancel context.CancelFunc
 }
 
+// OnCode shows a pairing code. The service sends the current code with
+// hello and again at the head of every event stream (so a reconnect shows
+// it), which is the same code twice on a normal start: print it once.
 func (m *manager) OnCode(code string, expiresAt time.Time) {
+	m.mu.Lock()
+	same := code == m.lastCode
+	m.lastCode = code
+	m.mu.Unlock()
+	if same {
+		return
+	}
 	fmt.Printf("\nPairing code: %s\n", code)
 	fmt.Println("Enter it in the masseuse.ai app: Camera > Home network camera.")
 	if !expiresAt.IsZero() && expiresAt.Year() > 2000 {

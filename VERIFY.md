@@ -33,7 +33,8 @@ slsa-verifier verify-artifact masseuse-camlink_X.Y.Z_linux_amd64.tar.gz \
   --source-tag vX.Y.Z
 ```
 
-For the image:
+For the image (the digest is the one `docker pull` prints, or
+`docker buildx imagetools inspect ghcr.io/femled/masseuse-camlink:vX.Y.Z`):
 
 ```sh
 cosign verify ghcr.io/femled/masseuse-camlink@sha256:... \
@@ -42,6 +43,13 @@ cosign verify ghcr.io/femled/masseuse-camlink@sha256:... \
 slsa-verifier verify-image ghcr.io/femled/masseuse-camlink@sha256:... \
   --source-uri github.com/FemLed/masseuse-camlink --source-tag vX.Y.Z
 ```
+
+The image signature needs cosign 3 or later: the release workflow signs
+with cosign 3, which stores the signature as a Sigstore bundle attached to
+the image (an OCI referrer, the `sha256-<digest>` tag on the registry)
+rather than the older `.sig` tag, and cosign 2 answers `no signatures
+found` even with `--new-bundle-format`. The checksum file's bundle in
+step 1 verifies with either major version.
 
 ## 3. Reproduce the binaries
 

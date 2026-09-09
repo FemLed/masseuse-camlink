@@ -9,7 +9,8 @@
 #   6. (optional, needs Go) so does the connector in the linux/amd64 archive.
 #
 # usage: scripts/verify-release.sh vX.Y.Z [download dir]
-# needs: curl, sha256sum (or shasum), cosign, slsa-verifier; go optional.
+# needs: curl, sha256sum (or shasum), cosign (3 or later for the image),
+# slsa-verifier; docker or crane and go optional.
 set -eu
 
 REPO="FemLed/masseuse-camlink"
@@ -56,12 +57,21 @@ awk '{print $2}' checksums.txt | while read -r f; do
   echo "    ok  $f"
 done
 
-if command -v docker >/dev/null 2>&1 || command -v crane >/dev/null 2>&1; then
+if ! command -v docker >/dev/null 2>&1 && ! command -v crane >/dev/null 2>&1; then
+  echo "==> 4. container image: skipped (no docker or crane)"
+elif [ "$(cosign version 2>&1 | sed -n 's/^GitVersion: *v\([0-9]*\).*/\1/p')" -lt 3 ] 2>/dev/null; then
+  # The release workflow signs the image with cosign 3, which attaches the
+  # signature as a Sigstore bundle (an OCI referrer); cosign 2 cannot read
+  # it and reports "no signatures found".
+  echo "==> 4. container image: skipped (cosign 3 or later is needed for the image signature; $(cosign version 2>&1 | sed -n 's/^GitVersion: *//p') found)"
+else
   echo "==> 4. container image"
   if command -v crane >/dev/null 2>&1; then
     digest=$(crane digest "$IMAGE:$tag")
   else
-    digest=$(docker buildx imagetools inspect "$IMAGE:$tag" --format '{{ .Manifest.Digest }}')
+    # The digest of the index is the hash of its bytes; --raw prints them
+    # exactly, where --format templates differ between buildx versions.
+    digest="sha256:$(docker buildx imagetools inspect --raw "$IMAGE:$tag" | $SHA | cut -d' ' -f1)"
   fi
   echo "    $IMAGE@$digest"
   cosign verify "$IMAGE@$digest" \
@@ -71,8 +81,6 @@ if command -v docker >/dev/null 2>&1 || command -v crane >/dev/null 2>&1; then
   slsa-verifier verify-image "$IMAGE@$digest" \
     --source-uri "github.com/$REPO" --source-tag "$tag" >/dev/null
   echo "    ok  provenance"
-else
-  echo "==> 4. container image: skipped (no docker or crane)"
 fi
 
 if command -v go >/dev/null 2>&1; then
