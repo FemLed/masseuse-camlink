@@ -86,7 +86,7 @@ enclave source    image=sha256:… source=github.com/FemLed/masseuse-video-tee@v
                   verify="slsa-verifier verify-image ghcr.io/femled/masseuse-video-tee@sha256:… --source-uri github.com/FemLed/masseuse-video-tee --source-tag v0.1.0"
 ```
 
-Run the `verify` command (or `scripts/verify-enclave.sh`, which checks every
+Run the `verify` command (or `sh scripts/verify-enclave.sh`, which checks every
 digest the service currently allows) and `slsa-verifier` confirms, from the
 public registry, that this exact digest was produced by that repository at
 that tag. [VERIFY.md](VERIFY.md), "The enclave your camera streams to",
