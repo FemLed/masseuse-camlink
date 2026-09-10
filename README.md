@@ -26,7 +26,10 @@ docker logs masseuse-camlink
 With Go installed, `go install github.com/FemLed/masseuse-camlink/cmd/masseuse-camlink@latest`
 builds the same code from the module proxy.
 
-Every release is reproducible and signed; see [VERIFY.md](VERIFY.md).
+Every release is reproducible and signed; see [VERIFY.md](VERIFY.md). The
+macOS binaries are also signed with an Apple Developer ID and notarized, so
+they run without a Gatekeeper warning; VERIFY.md, "The macOS binaries", shows
+how to check the signer and how to compare them with a rebuild all the same.
 
 ## Use
 
