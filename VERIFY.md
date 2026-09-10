@@ -11,6 +11,10 @@ carries:
 - container images at `ghcr.io/femled/masseuse-camlink`, signed keyless by
   digest, with SBOMs and their own SLSA container provenance.
 
+The connectors in the `darwin_*` archives are in addition signed with an
+Apple Developer ID and notarized ("The macOS binaries" below says how to
+check the signer and how to compare them with a rebuild regardless).
+
 `sh scripts/verify-release.sh vX.Y.Z` runs the release checks below (1 to 3);
 `sh scripts/verify-enclave.sh` runs the enclave check (4). (Both are plain
 POSIX sh; the repository stores them without the executable bit.)
@@ -104,6 +108,62 @@ tar -xzOf ../masseuse-camlink_X.Y.Z_linux_amd64.tar.gz masseuse-camlink | sha256
 Use `GOOS`/`GOARCH` (and `GOARM=7` for `linux_armv7`) to match the archive;
 Windows archives are zips and the binary is `masseuse-camlink.exe`. The
 container image holds the very same binaries as the archives.
+
+### The macOS binaries
+
+The `darwin_arm64` and `darwin_amd64` connectors are signed with FemLed's
+Apple Developer ID and notarized, so macOS runs them without a Gatekeeper
+warning. The signature is the one input to a release that nobody else can
+reproduce, and it is the only difference from the recipe above: strip it
+from the published binary and from your rebuild, and the two are identical.
+`cmd/machostrip` does the stripping on any operating system, the way the Go
+project checks its own macOS distributions (`golang.org/x/build/cmd/gorebuild`):
+it removes the `LC_CODE_SIGNATURE` load command, the signature at the end of
+the file and the zero filler a signing tool leaves where the linker's ad-hoc
+signature was, and shrinks `__LINKEDIT` to match. Nothing else changes. Your
+rebuild is stripped too because the Go linker itself signs every
+darwin/arm64 binary ad hoc; an unsigned darwin/amd64 rebuild passes through
+untouched.
+
+```sh
+export GOTOOLCHAIN=go1.27.1 CGO_ENABLED=0 GOFLAGS=
+mkdir connector && cd connector && printf 'module connector\n' > go.mod
+go get github.com/FemLed/masseuse-camlink@vX.Y.Z
+GOOS=darwin GOARCH=arm64 go build -mod=mod -trimpath -buildvcs=false -ldflags='-s -w -buildid=' \
+  -o rebuilt github.com/FemLed/masseuse-camlink/cmd/masseuse-camlink
+tar -xzOf ../masseuse-camlink_X.Y.Z_darwin_arm64.tar.gz masseuse-camlink > published
+go run github.com/FemLed/masseuse-camlink/cmd/machostrip@vX.Y.Z -sha256 rebuilt published
+```
+
+The two hashes match. The release workflow's `reproduce` job runs this for
+both architectures on every tag, and also fails if a published darwin
+binary turns out not to carry a signature. On a Mac, the signature itself
+is checked with Apple's tools:
+
+```sh
+codesign --verify --strict --verbose=2 masseuse-camlink
+codesign -dvv masseuse-camlink 2>&1 | grep -E '^(TeamIdentifier|Timestamp|CodeDirectory)'
+spctl --assess --type execute -vv masseuse-camlink
+mkdir certs && (cd certs && codesign -d --extract-certificates ../masseuse-camlink)
+openssl x509 -inform DER -in certs/codesign0 -noout -fingerprint -sha256
+```
+
+The expected signer is Apple Developer Team ID `B8Z4RP3846`
+(`TeamIdentifier=B8Z4RP3846`), signing with the hardened runtime
+(`flags=0x10000(runtime)`) and an Apple timestamp, and `spctl` answers
+`accepted` with `source=Notarized Developer ID`. The leaf certificate,
+issued by Apple's Developer ID Certification Authority (G2) and valid from
+September 2026 to September 2031, has the SHA-256 fingerprint
+
+```
+8D:A7:D2:FD:A7:BE:3C:AC:CE:6E:20:19:FE:0C:1A:68:B2:C1:B5:DC:A0:14:55:68:52:C6:8E:62:3A:35:44:80
+```
+
+(SHA-1 `F2:86:A0:BD:8A:53:56:28:96:4B:F7:14:75:28:B3:F3:E5:E0:28:79`). A
+replacement certificate will be listed here alongside this one, with the
+first release it signs, before it is used. The signature says who published
+the binary and that Apple's notary service scanned it; what the binary does
+is established by the rebuild above, not by the signature.
 
 ## 4. The enclave your camera streams to
 
