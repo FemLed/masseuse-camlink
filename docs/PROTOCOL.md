@@ -135,6 +135,22 @@ policy fields are:
 | `imageReferencePrefix` | must be under the floor; filled when absent | the enclave image in that project's Artifact Registry |
 | `allowedImageDigests`, `expectedTrainerUrl`, `imageSources` | as served (only ever tighten) | |
 
+Once the token verifies, and before the WebSocket is opened, the connector
+checks the attested image's provenance (`internal/provenance`): from
+`imageRepo` in the public registry it reads the Sigstore records attached to
+`submods.container.image_digest` (OCI referrers, or cosign's
+`sha256-<digest>` and `sha256-<digest>.att` tags) and requires, verified
+against the Sigstore trust root with sigstore-go, a keyless signature whose
+certificate is `https://<sourceUri>/.github/workflows/release.yml@refs/tags/<TEE_IMAGE_VERSION>`
+from `https://token.actions.githubusercontent.com` for a run on `sourceUri`
+at that tag and `TEE_IMAGE_COMMIT`, and SLSA provenance signed by
+`slsa-github-generator`'s `generator_container_slsa3.yml` whose statement
+names `git+https://<sourceUri>@refs/tags/<TEE_IMAGE_VERSION>` at that commit
+through `.github/workflows/release.yml`. Both must be recorded in Rekor. A
+token without a release stamp, a policy without `sourceUri`, or an image
+without both records is refused. Verified results are cached for seven days
+per digest, release and commit.
+
 The gateway checks `sha256(ticket) == ticketHash` and `now < expiresAt`, else
 `401`. The WebSocket then carries a single byte stream (binary messages,
 `websocket.NetConn`) of frames:
