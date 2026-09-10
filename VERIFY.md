@@ -235,8 +235,44 @@ verify=`) each time it dials, with the digest and release it just verified
 --origin https://slot-N.tee.masseuse.ai` reads the digest and release off a
 live enclave's token and runs both checks, and `sh scripts/verify-enclave.sh
 sha256:<digest>@<tag>` does the same for a line from the connector's log.
-An image built before the stamp existed verifies without `--source-tag`;
-the provenance still names the source repository and the commit.
+
+The connector also runs both checks itself, before the first frame leaves
+the machine (`internal/provenance`, on
+[sigstore-go](https://github.com/sigstore/sigstore-go)). From the public
+registry it reads what the release attached to the attested digest: the
+Sigstore bundle cosign wrote, and the SLSA provenance the
+`slsa-github-generator` builder signed. It verifies the bundle the way
+`cosign verify` does (the certificate chains to Fulcio and was logged in a
+certificate transparency log; the signature covers a statement about this
+digest; the Rekor entry and the timestamp check against the Sigstore trust
+root) and requires the certificate to name this repository's release
+workflow at the very tag the token names, issued by GitHub Actions for a
+run on that repository at that tag and, when the token names one, that
+commit. It verifies the provenance the way `slsa-verifier` does (the same
+checks, with the builder's identity in the certificate) and then reads the
+statement: built by the SLSA generator, from
+`git+https://github.com/FemLed/masseuse-video-tee@refs/tags/<TEE_IMAGE_VERSION>`
+at `TEE_IMAGE_COMMIT`, through `.github/workflows/release.yml`. The trust
+root is the public Sigstore one, embedded at build time
+(`internal/provenance/trusted_root.json`) and refreshed through TUF into the
+state directory when the network allows. Anything missing, unreadable or
+failing refuses the enclave: `enclave provenance: signature over
+sha256:...: none of N records is a signature by ...`. What passes is logged
+as `enclave provenance ... signed_by= signature_log_index= builder=
+provenance_log_index=`, with the Rekor indexes so the entries can be looked
+up (`rekor-cli get --log-index N`), and printed once per image. Results are
+kept for a week per digest, release and commit (`<state-dir>/provenance/`),
+so a reconnect does not ask the registry again; the attestation itself is
+verified on every dial regardless.
+
+This closes the gap the attestation alone leaves. The token proves the
+launcher checked a signature from the release key over the digest and that
+the image says it is release X at commit Y; the provenance proves, on
+records no one at the service can alter after the fact, that release X at
+commit Y is what the public build produced under that digest. Both come from
+sources other than the service the connector is talking to. An image built
+before the stamp existed carries no release to check against, and the
+connector refuses it.
 
 What this does not cover is the same as for the connector itself: that the
 source does what it says is a matter of reading it (`masseuse-video-tee`,
