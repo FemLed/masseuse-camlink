@@ -175,7 +175,7 @@ not list image digests. It names the rule an image must satisfy and where
 its source lives:
 
 ```json
-"imageSignatures": ["<hex SHA-256 of the release signing key>"],
+"imageSignatures": ["cfb085b950e93abb8332cede62fa50df662ef9aebb1533b2ae0bf1403ea4f811"],
 "minRelease": "v0.4.0",
 "sourceUri": "github.com/FemLed/masseuse-video-tee",
 "imageRepo": "ghcr.io/femled/masseuse-video-tee"
@@ -191,6 +191,27 @@ attests the whole container environment, and the connector refuses a release
 below `minRelease`. Nothing has to be committed after the fact for this to
 hold, which is the point: a list of digests kept in a repository is always
 one release behind the image it describes.
+
+The served policy is not the last word, though: a service that could
+publish a looser policy could send a connector to an enclave of its own
+choosing. So this connector carries floors of its own
+(`internal/attest/floors.go`, `Production`), and the served policy can only
+tighten them. The floors fix the token issuer and key set (Google's
+Confidential Space signer), the software and hardware (`CONFIDENTIAL_SPACE`
+on `GCP_INTEL_TDX`), the signing key above, `minRelease` `v0.4.0`, the
+source repository and public registry above, the Google Cloud project the
+enclave must run in (`prod-masseuse-video-tee`, the token's
+`submods.gce.project_id`) and the registry image it must have been pulled
+from (`submods.container.image_reference`), the `.tee.masseuse.ai` host
+suffix, no debug images, `STABLE` Confidential Space releases and GPU
+confidential computing on. A served policy that names another issuer,
+another key, another project or hosts elsewhere is refused with `policy is
+looser than this build's floors`, and the connector dials nothing until the
+service serves one that is not. `docs/PROTOCOL.md` lists the rule for every
+field. Changing a floor takes a release of this repository, which is
+reproducible and signed as described above: what the connector will talk
+to is fixed by code you can read and rebuild, not by a document a server
+sends. The `enclave verified` line names the key id that matched (`signer=`).
 
 The release workflow builds the image on GitHub Actions from the tagged
 commit, pushes it to the public registry with SLSA provenance and a keyless

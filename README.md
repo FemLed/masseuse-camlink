@@ -55,7 +55,10 @@ Flags: `--service https://masseuse.ai` (the rendezvous service),
 - **One attested peer.** Before dialing an enclave the connector verifies the
   enclave's Confidential Space attestation against the published policy and
   pins the enclave's TLS key to the one bound into that attestation. It does
-  not dial anything else.
+  not dial anything else. The policy can only tighten floors compiled into
+  the connector (the token issuer, the image signing key, the lowest
+  release, the project and registry the enclave runs from, the host suffix),
+  so the service cannot steer it to an enclave this build does not accept.
 - **One private target.** The connector will only connect to the single
   private-network camera address your session names. It is not a proxy.
 - **Open and reproducible.** Apache-2.0, built from a pinned Go toolchain
@@ -85,7 +88,7 @@ tag and source commit into the image, where the attestation reports them.
 When the connector dials an enclave it logs two things:
 
 ```
-enclave verified  image=sha256:… instance=… dbgstat=disabled-since-boot release=vX.Y.Z commit=…
+enclave verified  image=sha256:… signer=cfb085b9… instance=… dbgstat=disabled-since-boot release=vX.Y.Z commit=…
 enclave source    image=sha256:… source=github.com/FemLed/masseuse-video-tee@vX.Y.Z registry=ghcr.io/femled/masseuse-video-tee
                   verify="slsa-verifier verify-image ghcr.io/femled/masseuse-video-tee@sha256:… --source-uri github.com/FemLed/masseuse-video-tee --source-tag vX.Y.Z"
 ```
