@@ -298,11 +298,22 @@ func (s *Source) client() *gortsplib.Client {
 		DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
 			return (&net.Dialer{Timeout: timeout}).DialContext(ctx, network, s.addr)
 		},
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true, // the fingerprint is the check, below
-			MinVersion:         tls.VersionTLS12,
-			VerifyConnection:   s.verify,
-		},
+		TLSConfig: s.fingerprintVerifiedTLS(),
+	}
+}
+
+// fingerprintVerifiedTLS is the TLS configuration for the camera. A home
+// camera presents a self-signed certificate for a private address, which no
+// chain of trust can vouch for, so chain verification is off and verify
+// checks the certificate itself: its SHA-256 must be the pinned one (given
+// with -camera-fingerprint, or trusted on first use and saved). It is the
+// check the enclave applies to every camera it is handed. The connection is
+// refused, not merely logged, when the fingerprint differs.
+func (s *Source) fingerprintVerifiedTLS() *tls.Config {
+	return &tls.Config{
+		InsecureSkipVerify: true, // no chain check; verify pins the certificate
+		MinVersion:         tls.VersionTLS12,
+		VerifyConnection:   s.verify,
 	}
 }
 
