@@ -143,7 +143,7 @@ is checked with Apple's tools:
 ```sh
 codesign --verify --strict --verbose=2 masseuse-camlink
 codesign -dvv masseuse-camlink 2>&1 | grep -E '^(TeamIdentifier|Timestamp|CodeDirectory)'
-spctl --assess --type execute -vv masseuse-camlink
+spctl --assess --type open --context context:primary-signature -vv masseuse-camlink
 mkdir certs && (cd certs && codesign -d --extract-certificates ../masseuse-camlink)
 openssl x509 -inform DER -in certs/codesign0 -noout -fingerprint -sha256
 ```
@@ -151,7 +151,10 @@ openssl x509 -inform DER -in certs/codesign0 -noout -fingerprint -sha256
 The expected signer is Apple Developer Team ID `B8Z4RP3846`
 (`TeamIdentifier=B8Z4RP3846`), signing with the hardened runtime
 (`flags=0x10000(runtime)`) and an Apple timestamp, and `spctl` answers
-`accepted` with `source=Notarized Developer ID`. The leaf certificate,
+`accepted` with `source=Notarized Developer ID` (a bare executable is
+assessed as an "open" with its primary signature; `--type execute` only
+evaluates app bundles, and answers "does not seem to be an app" for a
+command-line binary). The leaf certificate,
 issued by Apple's Developer ID Certification Authority (G2) and valid from
 September 2026 to September 2031, has the SHA-256 fingerprint
 

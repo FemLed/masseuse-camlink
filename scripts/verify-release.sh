@@ -167,7 +167,9 @@ if command -v go >/dev/null 2>&1; then
       fp=$(openssl x509 -inform DER -in "$work/certs_$arch/codesign0" -noout -fingerprint -sha256 | sed 's/^.*=//')
       [ "$fp" = "$APPLE_CERT_SHA256" ] \
         || { echo "    darwin/$arch: unexpected signing certificate $fp" >&2; exit 1; }
-      assess=$(spctl --assess --type execute -vv "$bin" 2>&1 || true)
+      # A bare executable is assessed as an "open" with its primary
+      # signature; "--type execute" only ever evaluates app bundles.
+      assess=$(spctl --assess --type open --context context:primary-signature -vv "$bin" 2>&1 || true)
       echo "$assess" | grep -q 'source=Notarized Developer ID' \
         || { echo "    darwin/$arch: not accepted as notarized:"; echo "$assess" | sed 's/^/      /'; exit 1; }
       echo "    ok  darwin/$arch: team $APPLE_TEAM_ID, certificate $fp, notarized"
