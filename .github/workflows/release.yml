@@ -87,6 +87,10 @@ jobs:
           MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
           MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
           MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          # Referenced only so the runner masks its value in the public job
+          # log: the signing certificate's subject, which the embedded signer
+          # prints at debug level. Nothing reads it.
+          MACOS_SIGN_SUBJECT: ${{ secrets.MACOS_SIGN_SUBJECT }}
       - name: Subjects for provenance
         id: hashes
         run: echo "hashes=$(base64 -w0 < dist/checksums.txt)" >> "$GITHUB_OUTPUT"
