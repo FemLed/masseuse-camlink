@@ -111,7 +111,29 @@ The origin's TLS certificate is verified against the public roots **and**
 pinned to the SubjectPublicKeyInfo hash that the origin's attestation bound
 (`tlsSpkiNonce` in `eat_nonce`), after the attestation token itself has been
 verified against the policy published at `<service>/api/tee-policy`
-(`internal/attest`).
+(`internal/attest`). The served policy is applied on top of floors compiled
+into the connector (`internal/attest`, `Floors`, `Production`): the token
+issuer and key set, the software and hardware model, the image signing key,
+the lowest release, the source repository and public registry, the Google
+Cloud project and registry path the enclave runs from, and the DNS suffix
+its hosts live under. A served policy can tighten any of these (a newer
+minimum release, a narrower host suffix, an explicit digest list) and the
+connector refuses one that contradicts them, so the service cannot steer a
+connector to an enclave the connector's own build does not accept. The
+policy fields are:
+
+| field | served | floor |
+|---|---|---|
+| `issuer`, `jwksUrl`, `swname`, `hwmodel` | must equal the floor | Confidential Space, Intel TDX |
+| `imageSignatures` | cut to the keys the floor trusts; none left is refused | the enclave release key |
+| `minRelease` | raised to the floor when lower or absent | `v0.4.0` |
+| `allowDebug` | always `false` | |
+| `requireStable`, `requireGpuCc` | always `true` | |
+| `sourceUri`, `imageRepo` | must equal the floor; filled when absent | `github.com/FemLed/masseuse-video-tee`, `ghcr.io/femled/masseuse-video-tee` |
+| `teeSlotHostSuffixes` | kept where under the floor; none left is refused | `.tee.masseuse.ai` |
+| `projectId` | must equal the floor; filled when absent | `prod-masseuse-video-tee` |
+| `imageReferencePrefix` | must be under the floor; filled when absent | the enclave image in that project's Artifact Registry |
+| `allowedImageDigests`, `expectedTrainerUrl`, `imageSources` | as served (only ever tighten) | |
 
 The gateway checks `sha256(ticket) == ticketHash` and `now < expiresAt`, else
 `401`. The WebSocket then carries a single byte stream (binary messages,

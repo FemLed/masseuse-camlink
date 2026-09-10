@@ -68,7 +68,7 @@ func main() {
 		log: logger,
 		dialer: &tunnel.Dialer{
 			Identity: id,
-			Attester: &policyAttester{service: *service, client: httpClient, log: logger},
+			Attester: &policyAttester{service: *service, client: httpClient, log: logger, floors: attest.Production},
 			Logger:   logger,
 		},
 		tunnels: map[string]*active{},
@@ -82,12 +82,15 @@ func main() {
 	fmt.Println("\nStopped.")
 }
 
-// policyAttester fetches the service's policy (cached briefly) and verifies
-// an enclave against it.
+// policyAttester fetches the service's policy (cached briefly), tightens it
+// to the floors this build carries, and verifies an enclave against it.
 type policyAttester struct {
 	service string
 	client  *http.Client
 	log     *slog.Logger
+	// floors is what the served policy may only tighten (internal/attest,
+	// Floors); the served policy is refused when it contradicts them.
+	floors attest.Floors
 
 	mu      sync.Mutex
 	policy  *attest.Policy
@@ -98,7 +101,7 @@ type policyAttester struct {
 func (a *policyAttester) Verify(ctx context.Context, origin string) (*attest.Result, error) {
 	a.mu.Lock()
 	if a.policy == nil || time.Since(a.fetched) > 5*time.Minute {
-		p, err := attest.FetchPolicy(ctx, a.client, a.service)
+		p, err := a.fetchPolicy(ctx)
 		if err != nil {
 			a.mu.Unlock()
 			return nil, err
@@ -114,7 +117,7 @@ func (a *policyAttester) Verify(ctx context.Context, origin string) (*attest.Res
 	if err != nil {
 		return nil, err
 	}
-	attrs := []any{"origin", origin, "image", res.ImageDigest, "instance", res.InstanceID, "dbgstat", res.DbgStat}
+	attrs := []any{"origin", origin, "image", res.ImageDigest, "signer", res.SignerKeyID, "instance", res.InstanceID, "dbgstat", res.DbgStat}
 	if res.Release != nil {
 		// The release tag and source commit the image was built from, read
 		// off the attested container environment.
@@ -129,6 +132,22 @@ func (a *policyAttester) Verify(ctx context.Context, origin string) (*attest.Res
 		a.log.Warn("enclave source unpublished", "image", res.ImageDigest, "note", "the policy names no source repository for its images; the attestation holds but the source cannot be checked")
 	}
 	return res, nil
+}
+
+// fetchPolicy downloads the served policy with its own deadline and applies
+// the floors: the result is at least as strict as both.
+func (a *policyAttester) fetchPolicy(ctx context.Context) (*attest.Policy, error) {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	p, err := attest.FetchPolicy(ctx, a.client, a.service)
+	if err != nil {
+		return nil, err
+	}
+	if err := a.floors.Apply(p); err != nil {
+		return nil, fmt.Errorf("%s/api/tee-policy: %w", a.service, err)
+	}
+	a.log.Debug("enclave policy", "signers", p.ImageSignatures, "minRelease", p.MinRelease, "hosts", p.TeeSlotHostSuffixes, "project", p.ProjectID, "imageRef", p.ImageReferencePrefix, "source", p.SourceURI)
+	return p, nil
 }
 
 // manager holds at most one tunnel per session and reacts to rendezvous
