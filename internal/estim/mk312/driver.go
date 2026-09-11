@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -49,8 +50,12 @@ func (s FileKeyStore) Load() (int, bool, error) {
 	return k, true, nil
 }
 
-// Save writes the key.
+// Save writes the key, creating the state directory if this is the first
+// thing written there (a probe on a fresh computer).
 func (s FileKeyStore) Save(key int) error {
+	if err := os.MkdirAll(filepath.Dir(s.Path), 0o700); err != nil {
+		return err
+	}
 	return os.WriteFile(s.Path, []byte(keyPrefix+strconv.Itoa(key)+"\n"), 0o600)
 }
 
