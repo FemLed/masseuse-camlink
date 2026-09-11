@@ -200,7 +200,12 @@ needs access to the serial device (usually the `dialout` group).
 
 What travels between the connector and the service for this is described in
 [docs/PROTOCOL.md](docs/PROTOCOL.md), section 7. It does not go through the
-camera tunnel and the enclave never sees it.
+camera tunnel and the enclave never sees it. The connector names the device
+family it serves with a fixed `kind` (`mk312bt` today; `estim-2b`,
+`dglabs-coyote` and `tens` are reserved for the E-Stim Systems 2B, the
+DG-Lab Coyote and other TENS units, without a driver yet), and the service
+shapes the session on that name: a session with no device is guided
+differently from one with a device connected.
 
 ## How it stays private
 
