@@ -147,8 +147,11 @@ The enclave closed the camera link (session cleared); waiting for the service.
 
 The first is a ticket the enclave no longer holds (the session moved on);
 the second is the session letting the camera go. Both are normal after
-"Use phone camera" or the end of a session; the next "Use this camera"
-brings a new ticket. While attached, the program also tells the service
+"Stop using this camera" or the end of a session; the next "Use this
+camera" brings a new ticket. A new ticket that arrives while the link is up
+(the session's room was leased again, as when its picture is being set up)
+changes nothing on screen: the link stays, and the new ticket is the one
+used if the link ever has to be redialed. While attached, the program also tells the service
 every 30 s that it is still there, so if the computer sleeps or drops off
 the network the app shows the camera offline within about 90 s rather than
 whenever the dead connection is noticed.
