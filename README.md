@@ -171,11 +171,18 @@ at normal, until a session on your phone uses this connector. That session
 arms it; the arm lasts as long as the session keeps answering, and the
 connector puts the device back to zero when the session ends, when the
 service goes quiet for 15 s, when any command fails, when the device stops
-answering, and when you stop the connector (Ctrl-C). The connector never
-sets Channel A above 85 of the device's 99, never touches Channel B, moves
-the level one step at a time, and selects only patterns from a fixed list.
-The service can only ask for what the connector allows; those limits are in
-this program's source, not on the service.
+answering, and when you stop the connector (Ctrl-C). Two of the bounds are
+yours to set for a session, from the phone: the power range the device is
+armed in (normal or high; high until you choose) and the highest level it
+may be set to (85 of the device's 99 until you choose; never more than 99).
+They hold for that session only; the next starts from the defaults. If you
+change them while the device is running and it cannot take the change in
+place (a different power range, or a maximum below where it is), the
+connector puts the device to zero first and arms it again within the new
+bounds. Everything else is fixed: the connector never touches Channel B,
+moves the level one step at a time, and selects only patterns from a fixed
+list. The service can only ask for what the connector allows; those limits
+are in this program's source, not on the service.
 
 To check the device without a session:
 
