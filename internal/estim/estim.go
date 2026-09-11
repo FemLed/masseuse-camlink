@@ -16,11 +16,39 @@ import (
 	"fmt"
 )
 
-// Kind names a supported device family.
+// Kind names a device family. It is the `kind` of the Descriptor the
+// connector reports (docs/PROTOCOL.md, section 7.3) and the value the
+// service keys its behaviour on, so the names are fixed here whether or not
+// this program carries a driver for them yet.
 type Kind string
 
-// KindMK312BT is the ErosTek MK-312BT over its serial link.
-const KindMK312BT Kind = "mk312bt"
+const (
+	// KindMK312BT is the ErosTek MK-312BT over its serial link. The one
+	// family with a driver in this program.
+	KindMK312BT Kind = "mk312bt"
+	// KindEstim2B is the E-Stim Systems 2B over its serial link.
+	KindEstim2B Kind = "estim-2b"
+	// KindCoyote is the DG-Lab Coyote, a Bluetooth Low Energy device.
+	KindCoyote Kind = "dglabs-coyote"
+	// KindTENS is any other transcutaneous electrical nerve stimulation unit
+	// the connector cannot name more precisely.
+	KindTENS Kind = "tens"
+)
+
+// Kinds lists every device family the Descriptor may name, in the order
+// above. A service that receives a kind outside this list should treat the
+// descriptor as malformed.
+var Kinds = []Kind{KindMK312BT, KindEstim2B, KindCoyote, KindTENS}
+
+// Known reports whether k is one of Kinds.
+func (k Kind) Known() bool {
+	for _, known := range Kinds {
+		if k == known {
+			return true
+		}
+	}
+	return false
+}
 
 // Capabilities tells the service what a device accepts.
 type Capabilities struct {

@@ -499,7 +499,21 @@ it changes:
 
 | type | fields | when |
 |---|---|---|
-| `device` | `kind` (`mk312bt`), `label`, `connected`, `capabilities` `{levelMax, channels, modes, tempo}` | a device is found or lost |
+| `device` | `kind`, `label`, `connected`, `capabilities` `{levelMax, channels, modes, tempo}` | a device is found or lost |
+
+`kind` names the device family and is what the service keys its behaviour
+on. The names are fixed in `internal/estim/estim.go` (`Kinds`) whether or
+not this program carries a driver for the family:
+
+| `kind` | device | driver in this program |
+|---|---|---|
+| `mk312bt` | ErosTek MK-312BT, serial link | yes |
+| `estim-2b` | E-Stim Systems 2B, serial link | not yet |
+| `dglabs-coyote` | DG-Lab Coyote, Bluetooth Low Energy | not yet |
+| `tens` | any other transcutaneous electrical nerve stimulation unit | not yet |
+
+A service that receives a `kind` outside this table should treat the
+descriptor as malformed.
 
 `capabilities.levelMax` is the device's own scale (99 for the MK-312BT):
 the most a session's `levelMax` may be. What a command may set is bounded
