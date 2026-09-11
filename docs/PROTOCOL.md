@@ -439,13 +439,29 @@ Whatever the service asks:
 
 - Channel A only; Channel B is written to zero before and after every
   command.
-- Level at most 85 of the device's 0..99 scale, moved one step per quarter
-  second with a read-back at every step; `adjust_level` moves at most 5.
+- Level at most the session's maximum (`device_settings.levelMax`, 85
+  until the session sets one) on the device's 0..99 scale, moved one step
+  per quarter second with a read-back at every step; `adjust_level` moves
+  at most 5 and never past the maximum.
 - Tempo (the device's MultiAdjust) 0..100 percent of the loaded pattern's
   range; `adjust_ma` moves at most 10.
 - Patterns from a fixed allow-list of the device's own pattern numbers
   (`0x76..0x7B`, `0x80..0x84`); the connector names none of them.
-- The power range is the connector's: high while armed, normal otherwise.
+- The power range is normal while released and, while armed, the
+  session's choice of normal or high (`device_settings.powerMode`, high
+  until the session sets one); the low range is never selected.
+
+Settings: the two bounds above that are the session's (`powerMode`,
+`levelMax`) arrive as a `device_settings` control for the attached session
+and are held for that session alone; a detach, or another session
+attaching, restores the defaults (high, 85). A change while armed that the
+device cannot take in place - a different power range, or a maximum below
+the level the device is at - releases the device (outputs to zero) and the
+connector arms again, in the new range; any other change applies at once.
+A `device_settings` control with a power range other than the two, a
+maximum off the scale, or a `sessionId` other than the attached session's
+is refused whole. The connector reports what it holds (`device_settings`
+up) after every attach and every change, accepted or not.
 
 Arming: the device is armed when the service attaches a live session
 (`companion_attached`); the attach is the consent, given on the phone. The
@@ -475,6 +491,7 @@ session:
 | `armed` | `armed`, `expiresAt` (RFC 3339 or null), `heldOff` (always false) | with `device_status` |
 | `device_telemetry` | `frames` (at most 32) | every 2 s while attached, when frames were sampled |
 | `device_ack` | `commandId`, `ok`, `result` or `error`, `status` | for every command |
+| `device_settings` | `powerMode` (`normal` or `high`), `levelMax` (0..99) | the settings in force: after every attach and every `device_settings` control |
 | `detached` | `reason` | when the connector detaches on its own |
 
 and at connector level (`sessionId` `""`), after every hello and whenever
@@ -484,11 +501,16 @@ it changes:
 |---|---|---|
 | `device` | `kind` (`mk312bt`), `label`, `connected`, `capabilities` `{levelMax, channels, modes, tempo}` | a device is found or lost |
 
+`capabilities.levelMax` is the device's own scale (99 for the MK-312BT):
+the most a session's `levelMax` may be. What a command may set is bounded
+by the session's setting within it (section 7.2).
+
 Down (service to connector, as `estim` events):
 
 | message | connector action |
 |---|---|
-| `{"type":"control","payload":{"type":"companion_attached","sessionId",...}}` | attach to the session, report state, arm |
+| `{"type":"control","payload":{"type":"companion_attached","sessionId",...}}` | attach to the session, report state and settings, arm |
+| `{"type":"control","payload":{"type":"device_settings","sessionId","powerMode","levelMax"}}` | take the session's settings (7.2), report them; release and arm again when the device cannot take the change in place |
 | `{"type":"control","payload":{"type":"mk312_command","commandId","sessionId","command":{"verb",...}}}` | run the command (below), acknowledge, report state |
 | `{"type":"heartbeat_ack","serverTime"}` | renew the arm |
 | `{"type":"detach","reason"}` | release and detach without replying |
