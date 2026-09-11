@@ -90,8 +90,13 @@ One stream per connector: a new stream replaces the previous one.
 | `estim` | `{"sessionId","message"}` | hand `message` to the stimulation device link (section 7); an older connector ignores it |
 
 On any disconnect the connector re-`hello`s with exponential backoff
-(1 s .. 60 s, jittered). A `dial` for a session it is already connected to is
-idempotent; a `dial` for a different origin replaces the current tunnel.
+(1 s .. 60 s, jittered). A `dial` for a session it is already on with the
+same origin keeps the tunnel it has (up, or being re-dialed after a network
+failure) and takes the new ticket for its next dial: the service sends one
+whenever it brokers the tunnel again, and the enclave then expects that
+ticket (section 5). A `dial` for a different origin replaces the current
+tunnel; so does one for a session whose tunnel the connector gave up on
+(the enclave refused the ticket, or closed the link itself).
 
 ### 2.3 `POST /api/camlink/source`
 
@@ -348,12 +353,11 @@ remembered in `source.json`:
   unchanged. The child runs only while a session is reading: it starts at the
   first `OPEN` for the reserved target and stops when the session ends, so
   the camera light is off between sessions. When the session's tunnel goes
-  down while the session lasts (the service re-dials with a new ticket on
-  every new lease, and the connector re-dials after a network failure) the
-  child keeps running for 15 s, since the relay is back at the stream within
-  seconds and a restart would put it back to zero just as the relay's
-  `DESCRIBE` arrives; with no stream opened by then it stops. A `DESCRIBE`
-  that arrives while ffmpeg is still starting waits for it (up to 12 s, longer
+  down while the session lasts (a network failure; the connector re-dials
+  on its own) the child keeps running for 15 s, since the relay is back at
+  the stream within seconds and a restart would put it back to zero just as
+  the relay's `DESCRIBE` arrives; with no stream opened by then it stops. A
+  `DESCRIBE` that arrives while ffmpeg is still starting waits for it (up to 12 s, longer
   than the relay's own 10 s patience for the answer, so that the connector is
   never what gives up first; the enclave gives the path 15 s to be ready).
   By default the capture uses the first camera and the first microphone
