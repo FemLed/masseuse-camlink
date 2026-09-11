@@ -47,7 +47,7 @@ how to check the signer and how to compare them with a rebuild all the same.
 
 ```
 $ masseuse-camlink
-masseuse-camlink v0.5.1
+masseuse-camlink v0.6.0
 Identity 3fK9pQ2m… (state in /Users/you/Library/Application Support/masseuse-camlink)
 Camera: Insta360 Link + Yeti Stereo Microphone (1280x720 30 fps, h264_videotoolbox). It is on only while a session reads it.
 
