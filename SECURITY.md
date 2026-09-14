@@ -51,9 +51,7 @@ are acknowledged within three business days.
   device stops by itself if the connector dies. Ctrl-C and the device's own
   power button stop it at any time. The Bluetooth finder connects only to a
   peripheral that offers the device's own service or advertises its name,
-  and takes it as found only once it answers a program query; the serial
-  probe listens before it writes, so ports that belong to other devices are
-  not written to.
+  and takes it as found only once it answers a program query.
 
 ## Supply chain
 
