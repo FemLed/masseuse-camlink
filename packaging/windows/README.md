@@ -46,6 +46,7 @@ from Windows; the camera and microphone are.
 | `winres.json` | the resources linked into the executable: the icon and the version-information strings (no version numbers, so the object is static) |
 | `Masseuse.ai.ico` | the icon, from the same 1024 px master as the Mac's `.icns` (`packaging/macos/masseuse-camlink-icon-1024.png`): 16, 32, 64 and 128 px as bitmaps, 256 px as PNG |
 | `make-syso.sh` | runs a pinned `go-winres` on `winres.json` and writes `cmd/masseuse-camlink/rsrc_windows_amd64.syso` and `rsrc_windows_arm64.syso`, which are committed; the Go linker picks them up by name on a windows build, so goreleaser's proxy build and the `reproduce` job link the same bytes. `ci.yml` regenerates them and fails if they differ from what is committed |
+| `verinfo/` | `go run ./packaging/windows/verinfo PROGRAM.exe` prints the strings Explorer's Details tab shows, read with the same Win32 calls Explorer uses; the workflows check the built connector with it. PowerShell's `(Get-Item x.exe).VersionInfo` is not used: .NET reports every string empty when the table has no `FileVersion` string, and this resource has none on purpose |
 | `README.txt` | goes into the zip as is (with Windows line endings) |
 | `build-zip.sh` | assembles the zip from a connector binary and `build.sh -t windows`'s output; plain `sh`, runs under Git's bash on the Windows runner (7-Zip) and on Linux (Info-ZIP) in `ci.yml` with a stand-in ffmpeg |
 

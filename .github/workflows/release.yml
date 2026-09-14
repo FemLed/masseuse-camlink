@@ -494,12 +494,14 @@ jobs:
       - name: The connector carries its Windows resources
         # The icon and the strings Explorer shows come from the committed
         # .syso (packaging/windows/make-syso.sh), linked by goreleaser's
-        # proxy build like any other.
-        shell: pwsh
+        # proxy build like any other. packaging/windows/verinfo reads them
+        # the way Explorer does (PowerShell's VersionInfo would report them
+        # empty: the resource carries no FileVersion string on purpose).
         run: |
-          $v = (Get-Item dist\masseuse-camlink.exe).VersionInfo
-          "ProductName: $($v.ProductName); CompanyName: $($v.CompanyName); FileDescription: $($v.FileDescription)"
-          if ($v.ProductName -ne 'Masseuse.ai' -or $v.FileDescription -ne 'Masseuse.ai for your computer') { exit 1 }
+          go run ./packaging/windows/verinfo dist/masseuse-camlink.exe | tee dist/verinfo.txt
+          grep -qx 'ProductName: Masseuse.ai' dist/verinfo.txt
+          grep -qx 'CompanyName: FemLed, Inc.' dist/verinfo.txt
+          grep -qx 'FileDescription: Masseuse.ai for your computer' dist/verinfo.txt
       - name: Assemble the zip
         run: sh packaging/windows/build-zip.sh -v "${GITHUB_REF_NAME#v}" -b dist/masseuse-camlink.exe -f dist/ffmpeg-windows -o dist
       - name: checksums-windows.txt, signed keyless

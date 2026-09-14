@@ -136,18 +136,21 @@ jobs:
           CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags='-s -w -buildid=' -o dist/masseuse-camlink.exe ./cmd/masseuse-camlink
           dist/masseuse-camlink.exe --version
       - name: Explorer's view of the program
-        shell: pwsh
+        # packaging/windows/verinfo reads the strings the way Explorer does;
+        # PowerShell's VersionInfo would report them empty, since the
+        # resource carries no FileVersion string on purpose.
         run: |
-          $v = (Get-Item dist\masseuse-camlink.exe).VersionInfo
-          "ProductName: $($v.ProductName); CompanyName: $($v.CompanyName); FileDescription: $($v.FileDescription)"
-          if ($v.ProductName -ne 'Masseuse.ai' -or $v.CompanyName -ne 'FemLed, Inc.' -or $v.FileDescription -ne 'Masseuse.ai for your computer') { exit 1 }
+          go run ./packaging/windows/verinfo dist/masseuse-camlink.exe | tee dist/verinfo.txt
+          grep -qx 'ProductName: Masseuse.ai' dist/verinfo.txt
+          grep -qx 'CompanyName: FemLed, Inc.' dist/verinfo.txt
+          grep -qx 'FileDescription: Masseuse.ai for your computer' dist/verinfo.txt
       - name: The zip, with a stand-in ffmpeg
         run: |
           cp dist/masseuse-camlink.exe dist/ffmpeg-windows/ffmpeg.exe
           printf 'stand-in for the licence texts (ci)\n' > dist/ffmpeg-windows/licenses/README
           sh packaging/windows/build-zip.sh -v 0.0.0 -b dist/masseuse-camlink.exe -f dist/ffmpeg-windows -o dist
-          7z l -ba dist/Masseuse.ai-0.0.0-windows.zip | grep -q ' Masseuse.ai.exe$'
-          7z l -ba dist/Masseuse.ai-0.0.0-windows.zip | grep -q ' README.txt$'
+          7z l -ba dist/Masseuse.ai-0.0.0-windows.zip | tr -d '\r' | grep -q ' Masseuse.ai.exe$'
+          7z l -ba dist/Masseuse.ai-0.0.0-windows.zip | tr -d '\r' | grep -q ' README.txt$'
           mkdir extracted && (cd extracted && 7z x -y ../dist/Masseuse.ai-0.0.0-windows.zip > /dev/null)
           extracted/Masseuse.ai.exe --version
           sha256sum dist/masseuse-camlink.exe extracted/Masseuse.ai.exe | cut -d' ' -f1 | uniq | wc -l | grep -q '^1$'

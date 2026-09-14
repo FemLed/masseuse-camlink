@@ -81,5 +81,5 @@ esac
 echo "wrote $zipfile ($(wc -c < "$zipfile" | tr -d ' ') bytes); $name.exe sha256 $a"
 case "$ziptool" in
   zip) unzip -Z1 "$zipfile" | sort | sed 's/^/  /' ;;
-  7z) 7z l -ba -slt "$zipfile" | sed -n 's/^Path = //p' | sort | sed 's/^/  /' ;;
+  7z) 7z l -ba -slt "$zipfile" | tr -d '\r' | sed -n 's/^Path = //p' | sort | sed 's/^/  /' ;;
 esac
