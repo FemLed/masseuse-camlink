@@ -16,9 +16,12 @@ the stream goes from your computer to the enclave inside TLS.
 
 ## Install
 
-Download the archive for your platform from the
-[releases page](https://github.com/FemLed/masseuse-camlink/releases) and
-unpack it anywhere. To send your computer's camera it needs
+On the computer in the room, open [masseuse.ai/computer](https://masseuse.ai/computer):
+it offers the download for that computer (Mac with Apple silicon or Intel,
+Windows, Linux), and the app on your phone can send it the address. The same
+files are on the
+[releases page](https://github.com/FemLed/masseuse-camlink/releases); unpack
+the archive anywhere. To send your computer's camera it needs
 [ffmpeg](https://ffmpeg.org), which does the capturing and encoding:
 
 - macOS: `brew install ffmpeg`
@@ -52,10 +55,11 @@ Identity 3fK9pQ2m… (state in /Users/you/Library/Application Support/masseuse-c
 Camera: Insta360 Link + Yeti Stereo Microphone (1280x720 30 fps, h264_videotoolbox). It is on only while a session reads it.
 
 Pairing code: 7QK4-N2PX
-Enter it in the masseuse.ai app when it asks for the pairing code.
+Type it into the masseuse.ai app on your phone when it asks for the code from your computer; the dash is added for you.
 ```
 
-Type the code into the app once, when its setup asks for it. The app then
+Type the code into the app once, when its setup asks for the code from your
+computer (eight letters and numbers; the dash is drawn for you). The app then
 shows the camera by name, and the session takes this camera on its own once
 the private room is ready (the app's Setup sheet can hand the view back to
 the phone, or to this camera again). From then on the program keeps a quiet
