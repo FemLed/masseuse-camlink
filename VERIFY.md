@@ -39,7 +39,7 @@ them without the executable bit.)
 ```sh
 cosign verify-blob \
   --bundle checksums.txt.sigstore.json \
-  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-camlink/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-camlink/[.]github/workflows/release[.]yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   checksums.txt
 sha256sum -c checksums.txt --ignore-missing
@@ -59,7 +59,7 @@ For the image (the digest is the one `docker pull` prints, or
 
 ```sh
 cosign verify ghcr.io/femled/masseuse-camlink@sha256:... \
-  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-camlink/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-camlink/[.]github/workflows/release[.]yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 slsa-verifier verify-image ghcr.io/femled/masseuse-camlink@sha256:... \
   --source-uri github.com/FemLed/masseuse-camlink --source-tag vX.Y.Z
@@ -203,7 +203,7 @@ signed and attested like the first:
 ```sh
 cosign verify-blob \
   --bundle checksums-darwin.txt.sigstore.json \
-  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-camlink/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-camlink/[.]github/workflows/release[.]yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   checksums-darwin.txt
 shasum -a 256 -c checksums-darwin.txt
@@ -273,12 +273,16 @@ the connector's own encoding chain through the `ffmpeg.exe` it packs
 so SmartScreen asks before the first start; the checks below are what stand
 in for it.
 
-The zip has its own checksum file, signed and attested like the others:
+The zip has its own checksum file, signed and attested like the others.
+The dots in the identity are written `[.]` rather than `\.` throughout this
+document and in `scripts/verify-release.sh` for the sake of Git Bash on
+Windows, which rewrites a backslash in an argument to a native program
+(cosign) as a path separator and would turn `\.` into `/.`:
 
 ```sh
 cosign verify-blob \
   --bundle checksums-windows.txt.sigstore.json \
-  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-camlink/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-camlink/[.]github/workflows/release[.]yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   checksums-windows.txt
 sha256sum -c checksums-windows.txt
@@ -361,7 +365,7 @@ the token names:
 slsa-verifier verify-image ghcr.io/femled/masseuse-video-tee@sha256:<digest> \
   --source-uri github.com/FemLed/masseuse-video-tee --source-tag <TEE_IMAGE_VERSION>
 cosign verify ghcr.io/femled/masseuse-video-tee@sha256:<digest> \
-  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-video-tee/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-identity-regexp '^https://github.com/FemLed/masseuse-video-tee/[.]github/workflows/release[.]yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
