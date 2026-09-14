@@ -364,10 +364,15 @@ func TestSessionCommandsAckAndNack(t *testing.T) {
 
 type gate struct {
 	estim.Driver
+	entered chan struct{}
 	release chan struct{}
 }
 
 func (g gate) Execute(ctx context.Context, cmd estim.Command, levelMax int, cancelled func() bool) (estim.Result, error) {
+	select {
+	case g.entered <- struct{}{}:
+	default:
+	}
 	<-g.release
 	return g.Driver.Execute(ctx, cmd, levelMax, cancelled)
 }
@@ -377,13 +382,14 @@ func TestSessionOneCommandAtATime(t *testing.T) {
 	box := fakebox.New()
 	rt, _ := boxRuntime(t, box)
 	inner := rt.Connect
+	entered := make(chan struct{}, 1)
 	release := make(chan struct{})
 	rt.Connect = func(ctx context.Context) (estim.Driver, error) {
 		d, err := inner(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return gate{d, release}, nil
+		return gate{d, entered, release}, nil
 	}
 	if err := rt.Open(ctx); err != nil {
 		t.Fatal(err)
@@ -394,6 +400,12 @@ func TestSessionOneCommandAtATime(t *testing.T) {
 	s.Wait()
 	up.drain(ctx, s)
 	s.Handle(ctx, "sess-1", control(`{"type":"mk312_command","commandId":"slow","sessionId":"sess-1","command":{"verb":"set_level","level":2}}`))
+	// The slow command holds the device once it reaches the driver.
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the slow command never reached the driver")
+	}
 	s.Handle(ctx, "sess-1", control(`{"type":"mk312_command","commandId":"second","sessionId":"sess-1","command":{"verb":"set_level","level":3}}`))
 	s.Flush(ctx)
 	up.mu.Lock()

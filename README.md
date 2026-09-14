@@ -163,53 +163,63 @@ whenever the dead connection is noticed.
 
 ## Your stimulation device
 
-If an electrical stimulation device the connector supports is plugged into
-the same computer, the connector serves it too: the service that runs your
-session sees its status and can adjust it, within limits the connector
-holds to. Supported today: the ErosTek MK-312BT over its serial link cable
-(the FTDI USB adapter it ships with). Nothing to set up: plug the cable in,
-switch the device on, and start the connector. It says
+If an electrical stimulation device the connector supports is within reach
+of the same computer, the connector serves it too: the service that runs
+your session sees its status and can adjust it, within limits the connector
+holds to. The reference device is the Mastago TENS unit (the Bluetooth
+unit that advertises as `MASTOGO G-xxxx`). Nothing to set up: switch the
+unit on and start the connector; the first time, macOS asks whether the
+terminal may use Bluetooth. The connector finds the unit whether it is
+advertising or already open in the vendor's own app on this computer, and
+says
 
 ```
-Stimulation device connected: ErosTek MK-312BT. It is held at zero until a session on your phone uses this computer.
+Stimulation device connected: Mastago TENS G-12AB. It is held at zero until a session on your phone uses this computer.
 ```
 
-and holds the device at zero, with its front panel live and its power range
-at normal, until a session on your phone uses this connector. That session
-arms it; the arm lasts as long as the session keeps answering, and the
-connector puts the device back to zero when the session ends, when the
-service goes quiet for 15 s, when any command fails, when the device stops
-answering, and when you stop the connector (Ctrl-C). Two of the bounds are
-yours to set for a session, from the phone: the power range the device is
-armed in (normal or high; high until you choose) and the highest level it
-may be set to (85 of the device's 99 until you choose; never more than 99).
-They hold for that session only; the next starts from the defaults. If you
-change them while the device is running and it cannot take the change in
-place (a different power range, or a maximum below where it is), the
-connector puts the device to zero first and arms it again within the new
-bounds. Everything else is fixed: the connector never touches Channel B,
-moves the level one step at a time, and selects only patterns from a fixed
-list. The service can only ask for what the connector allows; those limits
-are in this program's source, not on the service.
+and holds the unit paused at zero, with its own buttons live, until a
+session on your phone uses this connector. That session arms it, which also
+sets the unit's own countdown to the arm window (30 minutes, renewed while
+the session keeps answering), so the unit stops by itself if this computer
+dies with it armed. The connector puts the unit back to zero when the
+session ends, when the service goes quiet for 15 s, when any command fails,
+when the unit stops answering or switches itself off, and when you stop the
+connector (Ctrl-C). One bound is yours to set for a session, from the
+phone: the highest intensity the unit may be set to (15 of its 25 until you
+choose; never more than 25). It holds for that session only; the next starts
+from the default. If you lower it below where the unit is running, the
+connector puts the unit to zero first and arms it again within the new
+bound. Everything else is fixed: the connector moves the intensity one step
+at a time, reading it back at every step, selects only the unit's own 32
+programs, and refuses an intensity the unit itself refuses because the
+pads are not on the skin. The service can only ask for what the connector
+allows; those limits are in this program's source, not on the service.
 
-To check the device without a session:
+To check the unit without a session:
 
 ```sh
 masseuse-camlink estim probe
 ```
 
-lists the USB serial adapters, finds the device, prints what it reports and
-leaves it released. If the connector picks the wrong adapter, name the right
-one with `-estim-port /dev/cu.usbserial-XXXX` (macOS), `/dev/ttyUSB0`
-(Linux) or `COM5` (Windows). A device that "holds the key of an earlier
-session" was left mid-conversation by a program that stopped without
-closing: switch it off for ten seconds and on again. On Linux your user
-needs access to the serial device (usually the `dialout` group).
+says what the connector can see over Bluetooth (units already open in
+another program, units advertising), finds the unit, prints what it reports
+and leaves it released. With several units in reach, name yours with
+`-estim-ble G-12AB` (the suffix the unit advertises); `-estim-ble off`
+leaves Bluetooth alone. On Linux the connector talks to BlueZ over D-Bus,
+so your user needs to be allowed to use Bluetooth (usually the `bluetooth`
+group); on Windows there is no Bluetooth backend yet.
+
+The connector also serves a two-channel serial device over its FTDI link
+cable (`kind` `mk312bt`); `-estim-port /dev/cu.usbserial-XXXX` names the
+adapter when the scan picks the wrong one, `-estim-port off` leaves serial
+ports alone, and on Linux your user needs access to the serial device
+(usually the `dialout` group). Its specifics are in
+[docs/PROTOCOL.md](docs/PROTOCOL.md), section 7.4.
 
 What travels between the connector and the service for this is described in
 [docs/PROTOCOL.md](docs/PROTOCOL.md), section 7. It does not go through the
 camera tunnel and the enclave never sees it. The connector names the device
-family it serves with a fixed `kind` (`mk312bt` today; `estim-2b`,
+family it serves with a fixed `kind` (`mastago`; `estim-2b`,
 `dglabs-coyote` and `tens` are reserved for the E-Stim Systems 2B, the
 DG-Lab Coyote and other TENS units, without a driver yet), and the service
 shapes the session on that name: a session with no device is guided

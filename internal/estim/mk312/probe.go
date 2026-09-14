@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"time"
 
@@ -173,4 +174,55 @@ func Scan(ctx context.Context, path string, store KeyStore, log *slog.Logger) (*
 		return nil, fmt.Errorf("%w: no USB serial adapter is connected", estim.ErrNoDevice)
 	}
 	return nil, fmt.Errorf("%w: %d serial adapter(s) answered nothing", estim.ErrNoDevice, tried)
+}
+
+// Finder is the estim.Finder for the MK-312BT: Scan over the USB serial
+// adapters, or the one port pinned.
+type Finder struct {
+	// Port, when set, is the one serial port tried.
+	Port  string
+	Store KeyStore
+	Log   *slog.Logger
+}
+
+// NewFinder is a Finder over the adapters on this computer (or the one
+// port, when not empty) with the key store.
+func NewFinder(port string, store KeyStore, log *slog.Logger) *Finder {
+	return &Finder{Port: port, Store: store, Log: log}
+}
+
+// Find is Scan.
+func (f *Finder) Find(ctx context.Context) (estim.Driver, error) {
+	d, err := Scan(ctx, f.Port, f.Store, f.Log)
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+// Describe lists the USB serial adapters and which of them Find would
+// probe.
+func (f *Finder) Describe(ctx context.Context, out io.Writer) error {
+	fmt.Fprintln(out, "USB serial (MK-312BT):")
+	if f.Port != "" {
+		fmt.Fprintf(out, "  pinned to %s  (will be probed)\n", f.Port)
+		return nil
+	}
+	cands, err := serialport.Candidates(ctx)
+	if err != nil {
+		fmt.Fprintf(out, "  serial ports: %v\n", err)
+		return err
+	}
+	if len(cands) == 0 {
+		fmt.Fprintln(out, "  no USB serial adapter is connected; plug the device's link cable in and switch the device on")
+		return nil
+	}
+	for _, c := range cands {
+		note := "  (skipped: not an adapter the device ships with; pin it with -estim-port)"
+		if c.Likely() {
+			note = "  (will be probed)"
+		}
+		fmt.Fprintf(out, "  %s%s\n", c, note)
+	}
+	return nil
 }
