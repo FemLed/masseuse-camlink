@@ -4,7 +4,7 @@
 # signed here (sign-notarize.sh does that); the script needs only sh, so
 # ci.yml builds the bundle unsigned on every pull request.
 #
-# usage: packaging/macos/build-app.sh -v VERSION -b CONNECTOR -f FFMPEG_DIR -o OUTDIR
+# usage: sh packaging/macos/build-app.sh -v VERSION -b CONNECTOR -f FFMPEG_DIR -o OUTDIR
 #   VERSION     the release version without the v (CFBundleShortVersionString)
 #   CONNECTOR   the masseuse-camlink binary to bundle (lipo -create'd for a
 #               universal app)

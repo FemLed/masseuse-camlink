@@ -4,7 +4,7 @@
 # icon. macOS only (hdiutil). The image is signed and notarized afterwards
 # by sign-notarize.sh.
 #
-# usage: packaging/macos/build-dmg.sh -a APP -v VERSION -o OUTDIR
+# usage: sh packaging/macos/build-dmg.sh -a APP -v VERSION -o OUTDIR
 #   writes OUTDIR/masseuse-camlink_VERSION_darwin_all.dmg (compressed, read-only)
 set -eu
 
@@ -60,5 +60,4 @@ mount=""
 rm -f "$dmg"
 hdiutil convert -quiet "$rw" -format UDZO -imagekey zlib-level=9 -o "$dmg"
 hdiutil verify -quiet "$dmg"
-echo "wrote $dmg"
-ls -la "$dmg"
+echo "wrote $dmg ($(wc -c < "$dmg" | tr -d ' ') bytes)"

@@ -62,8 +62,8 @@ release secrets):
 
 ```sh
 go build -trimpath -buildvcs=false -ldflags='-s -w -buildid=' -o dist/masseuse-camlink ./cmd/masseuse-camlink
-packaging/ffmpeg/build.sh -o dist/ffmpeg -a "$(uname -m)"     # a few minutes; one architecture
-packaging/macos/build-app.sh -v 0.0.0 -b dist/masseuse-camlink -f dist/ffmpeg -o dist
+sh packaging/ffmpeg/build.sh -o dist/ffmpeg -a "$(uname -m)"  # a few minutes; one architecture
+sh packaging/macos/build-app.sh -v 0.0.0 -b dist/masseuse-camlink -f dist/ffmpeg -o dist
 open dist/masseuse-camlink.app                                  # Terminal opens with the connector
 ```
 

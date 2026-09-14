@@ -10,7 +10,7 @@
 # THIRD_PARTY.md. The release attaches the same tarballs and this script's
 # configure flags are the build recipe, which is the LGPL's source offer.
 #
-# usage: packaging/ffmpeg/build.sh [-o OUTDIR] [-w WORKDIR] [-a ARCHS]
+# usage: sh packaging/ffmpeg/build.sh [-o OUTDIR] [-w WORKDIR] [-a ARCHS]
 #   OUTDIR   where to put ffmpeg (universal), the source tarballs and the
 #            licence texts (default: dist/ffmpeg)
 #   WORKDIR  downloads and build trees (default: OUTDIR/work); tarballs

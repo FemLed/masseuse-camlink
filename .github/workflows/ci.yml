@@ -85,7 +85,7 @@ jobs:
           lipo -create -output dist/masseuse-camlink dist/masseuse-camlink_arm64 dist/masseuse-camlink_amd64
           cp /usr/bin/true dist/ffmpeg/ffmpeg # a Mach-O stand-in, so codesign has nested code to seal
           printf 'stand-in for the licence texts (ci)\n' > dist/ffmpeg/licenses/README
-          packaging/macos/build-app.sh -v 0.0.0 -b dist/masseuse-camlink -f dist/ffmpeg -o dist
+          sh packaging/macos/build-app.sh -v 0.0.0 -b dist/masseuse-camlink -f dist/ffmpeg -o dist
           plutil -lint dist/masseuse-camlink.app/Contents/Info.plist
           test "$(plutil -extract CFBundleExecutable raw -o - dist/masseuse-camlink.app/Contents/Info.plist)" = masseuse-camlink
           test "$(lipo -archs dist/masseuse-camlink.app/Contents/MacOS/masseuse-camlink)" = "x86_64 arm64"
@@ -94,7 +94,7 @@ jobs:
           dist/masseuse-camlink.app/Contents/MacOS/masseuse-camlink --version
           codesign --force --deep --sign - dist/masseuse-camlink.app
           codesign --verify --deep --strict --verbose=2 dist/masseuse-camlink.app
-          packaging/macos/build-dmg.sh -a dist/masseuse-camlink.app -v 0.0.0 -o dist
+          sh packaging/macos/build-dmg.sh -a dist/masseuse-camlink.app -v 0.0.0 -o dist
           hdiutil imageinfo dist/masseuse-camlink_0.0.0_darwin_all.dmg | grep -E '^Format: UDZO'
 
   vulncheck:
