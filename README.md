@@ -52,14 +52,15 @@ Identity 3fK9pQ2m… (state in /Users/you/Library/Application Support/masseuse-c
 Camera: Insta360 Link + Yeti Stereo Microphone (1280x720 30 fps, h264_videotoolbox). It is on only while a session reads it.
 
 Pairing code: 7QK4-N2PX
-Enter it in the masseuse.ai app: Camera > Computer or home camera.
+Enter it in the masseuse.ai app when it asks for the pairing code.
 ```
 
-Type the code into the app once. The app then shows the camera by name, with
-a button, **Use this camera**, that points the session at it. From then on
-the program keeps a quiet connection to masseuse.ai and, whenever a session
-uses the camera, turns it on and sends the picture for as long as the session
-lasts:
+Type the code into the app once, when its setup asks for it. The app then
+shows the camera by name, and the session takes this camera on its own once
+the private room is ready (the app's Setup sheet can hand the view back to
+the phone, or to this camera again). From then on the program keeps a quiet
+connection to masseuse.ai and, whenever a session uses the camera, turns it
+on and sends the picture for as long as the session lasts:
 
 ```
 Camera link active: connected to the verified enclave.

@@ -386,7 +386,7 @@ func (m *manager) OnCode(code string, expiresAt time.Time) {
 		return
 	}
 	m.printf("\nPairing code: %s\n", code)
-	m.printf("Enter it in the masseuse.ai app: Camera > Computer or home camera.\n")
+	m.printf("Enter it in the masseuse.ai app when it asks for the pairing code.\n")
 	if !expiresAt.IsZero() && expiresAt.Year() > 2000 {
 		m.printf("(valid until %s; a new one appears here when it expires)\n\n", expiresAt.Local().Format("15:04"))
 	}
