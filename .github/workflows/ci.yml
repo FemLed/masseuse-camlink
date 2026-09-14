@@ -58,6 +58,45 @@ jobs:
             GOOS=${target%/*} GOARCH=${target#*/} CGO_ENABLED=0 go vet ./internal/ble/ ./internal/serialport/ ./internal/estim/...
           done
 
+  macos-bundle:
+    # The macOS application bundle (packaging/macos) assembled unsigned, so
+    # a broken plist, script or layout is caught here rather than on a tag;
+    # and the tests that need Apple's tools (lipo, codesign, sh) run on the
+    # system they are for. ffmpeg is not built on pull requests (minutes);
+    # a stand-in takes its place in the bundle.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: go test on macOS
+        run: go test -count=1 ./cmd/... ./internal/capture/ ./internal/machosig/ ./internal/ble/
+      - name: Unsigned bundle and disk image
+        run: |
+          mkdir -p dist/ffmpeg/licenses dist/ffmpeg/sources
+          for arch in arm64 amd64; do
+            GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags='-s -w -buildid=' \
+              -o "dist/masseuse-camlink_${arch}" ./cmd/masseuse-camlink
+          done
+          lipo -create -output dist/masseuse-camlink dist/masseuse-camlink_arm64 dist/masseuse-camlink_amd64
+          cp /usr/bin/true dist/ffmpeg/ffmpeg # a Mach-O stand-in, so codesign has nested code to seal
+          printf 'stand-in for the licence texts (ci)\n' > dist/ffmpeg/licenses/README
+          packaging/macos/build-app.sh -v 0.0.0 -b dist/masseuse-camlink -f dist/ffmpeg -o dist
+          plutil -lint dist/masseuse-camlink.app/Contents/Info.plist
+          test "$(plutil -extract CFBundleExecutable raw -o - dist/masseuse-camlink.app/Contents/Info.plist)" = masseuse-camlink
+          test "$(lipo -archs dist/masseuse-camlink.app/Contents/MacOS/masseuse-camlink)" = "x86_64 arm64"
+          go run ./cmd/machostrip -sha256 dist/masseuse-camlink.app/Contents/MacOS/masseuse-camlink
+          # The bundle's own program, run from a shell, is the console program.
+          dist/masseuse-camlink.app/Contents/MacOS/masseuse-camlink --version
+          codesign --force --deep --sign - dist/masseuse-camlink.app
+          codesign --verify --deep --strict --verbose=2 dist/masseuse-camlink.app
+          packaging/macos/build-dmg.sh -a dist/masseuse-camlink.app -v 0.0.0 -o dist
+          hdiutil imageinfo dist/masseuse-camlink_0.0.0_darwin_all.dmg | grep -E '^Format: UDZO'
+
   vulncheck:
     runs-on: ubuntu-latest
     steps:
