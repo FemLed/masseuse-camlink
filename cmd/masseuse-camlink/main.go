@@ -41,6 +41,8 @@ func main() {
 		stateDir = flag.String("state-dir", envOr("MASSEUSE_CAMLINK_STATE_DIR", defaultStateDir()), "where the identity key, pairings and camera choice live")
 		logLevel = flag.String("log-level", "info", "debug, info, warn or error")
 		version  = flag.Bool("version", false, "print the version and exit")
+		console  = flag.Bool("console", false, "run in this terminal even when started from the macOS application bundle")
+		appMode  = flag.Bool("app", false, "do as the macOS application bundle does when opened: run the program in a new Terminal window")
 		sf       sourceFlags
 	)
 	flag.StringVar(&sf.camera, "camera", "", "the computer's camera to send: its number in the devices listing, or (part of) its name; default the first")
@@ -68,8 +70,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "-service must be an https:// URL")
 		os.Exit(2)
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	// SIGHUP is the terminal window closing on the program: the unit is put
+	// back to zero and released on the way out, as on Ctrl-C.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
 
 	switch flag.Arg(0) {
@@ -87,6 +90,27 @@ func main() {
 		os.Exit(2)
 	}
 
+	// Opened from the macOS application bundle there is no terminal to
+	// print the code to: hand the program to one (desktop.go) and end. The
+	// subcommands above print to whatever they were given and never do.
+	if *appMode || (!*console && launchedFromBundle()) {
+		if err := handToTerminal(*stateDir); err != nil {
+			reportHandoffFailure(err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	release, err := lockInstance(*stateDir)
+	if err != nil {
+		if errors.Is(err, errAlreadyRunning) {
+			fmt.Fprintln(os.Stderr, "masseuse-camlink is already running, in another window. Close that one first, or give this one its own -state-dir.")
+		} else {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		os.Exit(1)
+	}
+	defer release()
 	id, err := identity.Load(*stateDir)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "identity:", err)
@@ -181,6 +205,9 @@ on your network, to the enclave of a masseuse.ai session.
   masseuse-camlink -camera 1 -mic 0   choose by number or by (part of) the name; remembered
   masseuse-camlink -camera-url rtsps://user:password@192.168.1.20:322/live
                                       send a camera on your network instead
+
+On a Mac the application bundle (masseuse-camlink.app) runs this same program
+in a Terminal window when opened; -console and -app choose either way by hand.
 
 Flags:
 `)

@@ -17,16 +17,28 @@ the stream goes from your computer to the enclave inside TLS.
 ## Install
 
 On the computer in the room, open [masseuse.ai/computer](https://masseuse.ai/computer):
-it offers the download for that computer (Mac with Apple silicon or Intel,
-Windows, Linux), and the app on your phone can send it the address. The same
-files are on the
-[releases page](https://github.com/FemLed/masseuse-camlink/releases); unpack
-the archive anywhere. To send your computer's camera it needs
+it offers the download for that computer (Mac, Windows, Linux), and the app
+on your phone can send it the address. The same files are on the
+[releases page](https://github.com/FemLed/masseuse-camlink/releases).
+
+**Mac.** The download is a disk image, `masseuse-camlink_X.Y.Z_darwin_all.dmg`,
+for Apple silicon and Intel alike. Open it, drag `masseuse-camlink` into
+`Applications`, and open it from there. A Terminal window opens with the
+program running in it: it names the camera and microphone it will use and
+shows the pairing code. ffmpeg is included in the app, so there is nothing
+else to install. Leave the window open while you use it; closing it stops
+the program, and opening the app again while it runs only brings that
+window back. (The `darwin_*` archives still carry the bare binary for
+people who run it from Terminal; run from anywhere but Terminal, macOS
+refuses a bare binary however it is signed, which is what the app is for.)
+
+**Windows and Linux.** Unpack the archive anywhere and run
+`masseuse-camlink` from a terminal. To send the computer's camera it needs
 [ffmpeg](https://ffmpeg.org), which does the capturing and encoding:
 
-- macOS: `brew install ffmpeg`
 - Windows: `winget install Gyan.FFmpeg`, then open a new terminal
 - Linux: `sudo apt install ffmpeg` (or your distribution's package)
+- macOS, when running the bare binary rather than the app: `brew install ffmpeg`
 
 Without ffmpeg the program still runs and can send a home network camera.
 On a NAS or Raspberry Pi the container image does that:
@@ -42,9 +54,14 @@ With Go installed, `go install github.com/FemLed/masseuse-camlink/cmd/masseuse-c
 builds the same code from the module proxy.
 
 Every release is reproducible and signed; see [VERIFY.md](VERIFY.md). The
-macOS binaries are also signed with an Apple Developer ID and notarized, so
-they run without a Gatekeeper warning; VERIFY.md, "The macOS binaries", shows
-how to check the signer and how to compare them with a rebuild all the same.
+macOS app, its disk image and the bare macOS binaries are also signed with
+an Apple Developer ID and notarized: the app and the image open from the
+Finder without a Gatekeeper refusal, and the bare binaries run from
+Terminal. VERIFY.md, "The macOS binaries" and "The macOS app", show how to
+check the signer and how to compare them with a rebuild all the same
+(everything in the app but ffmpeg is byte for byte the published binaries;
+ffmpeg is built from pinned upstream sources by the same public workflow,
+`packaging/ffmpeg/THIRD_PARTY.md`).
 
 ## Use your computer's camera
 
