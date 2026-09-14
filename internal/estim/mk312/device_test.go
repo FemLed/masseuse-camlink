@@ -399,7 +399,7 @@ func TestDriverExecuteAndCaps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if drv.Kind() != estim.KindMK312BT || drv.Label() != mk312.Label || drv.Port() != "fake" {
+	if drv.Kind() != mk312.Kind || drv.Label() != mk312.Label || drv.Port() != "fake" {
 		t.Fatal("driver identity")
 	}
 	caps := drv.Capabilities()

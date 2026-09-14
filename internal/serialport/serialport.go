@@ -21,8 +21,9 @@ import (
 	"go.bug.st/serial"
 )
 
-// FTDIVendor is the USB vendor id of the FTDI parts in the serial cables the
-// supported devices ship with (FT232R 0403:6001, FT231X 0403:6015).
+// FTDIVendor is the USB vendor id of the FTDI parts (FT232R 0403:6001,
+// FT231X 0403:6015) found in the serial link cables stimulation devices
+// with a serial port ship with; a scan probes those adapters first.
 const FTDIVendor = 0x0403
 
 // Config is how a port is opened: 8 data bits, no parity, one stop bit, no

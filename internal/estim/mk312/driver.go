@@ -16,6 +16,10 @@ import (
 // Label names the device for people.
 const Label = "ErosTek MK-312BT"
 
+// Kind is the device family the driver reports, the `kind` the service
+// keys its behaviour on.
+const Kind estim.Kind = "mk312bt"
+
 // A KeyStore keeps the session key across connector restarts, so a
 // connector that restarted mid-session can resume the device instead of
 // needing it power-cycled.
@@ -78,7 +82,14 @@ type Driver struct {
 // The device's own bounds: the level scale's top (the session's maximum
 // sits within it; estim.DefaultLevelCap until one is set), Channel A only,
 // the pattern allow-list, a tempo control.
-var capabilities = estim.Capabilities{LevelMax: LCDMax, Channels: []string{"a"}, Modes: AllowedModes, Tempo: true}
+var capabilities = estim.Capabilities{
+	LevelMax:        LCDMax,
+	Channels:        []string{"a"},
+	Modes:           AllowedModes,
+	Tempo:           true,
+	PowerModes:      []string{estim.PowerModeNormal, estim.PowerModeHigh},
+	LevelMaxDefault: estim.DefaultLevelCap,
+}
 
 // Capabilities describes what the service may ask of the device.
 func Capabilities() estim.Capabilities { return capabilities }
@@ -123,8 +134,8 @@ func Connect(ctx context.Context, dev *Device, store KeyStore, log *slog.Logger)
 	return &Driver{Device: dev, store: store, log: log}, nil
 }
 
-// Kind is estim.KindMK312BT.
-func (d *Driver) Kind() estim.Kind { return estim.KindMK312BT }
+// Kind is the MK-312BT family.
+func (d *Driver) Kind() estim.Kind { return Kind }
 
 // Label is the device's name.
 func (d *Driver) Label() string { return Label }

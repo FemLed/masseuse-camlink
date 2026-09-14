@@ -22,6 +22,11 @@ const (
 	// RingCapacity is two minutes of frames; with nothing draining, the
 	// oldest are dropped.
 	RingCapacity = 240
+	// RenewSlack is how far the arm window may run ahead of a device's own
+	// countdown before the countdown is armed again (ArmRenewer): the
+	// window rolls forward with every heartbeat, the device is written to
+	// about once a minute.
+	RenewSlack = time.Minute
 )
 
 // Ring is a bounded FIFO of frames awaiting upload.
@@ -99,13 +104,16 @@ type Runtime struct {
 	st          sync.Mutex
 	cancel      atomic.Bool
 	armDeadline time.Time
-	lastStatus  Status
-	hasStatus   bool
-	lastError   string
-	last        Descriptor
-	frames      int
-	gaps        int
-	readErrors  int
+	// renewedUntil is when the device's own countdown, as last armed,
+	// runs out (ArmRenewer devices only).
+	renewedUntil time.Time
+	lastStatus   Status
+	hasStatus    bool
+	lastError    string
+	last         Descriptor
+	frames       int
+	gaps         int
+	readErrors   int
 	// settings are the attached session's; DefaultSettings while the zero
 	// value (hasSettings false).
 	settings    Settings
@@ -175,8 +183,8 @@ func (r *Runtime) ArmedUntil() (time.Time, bool) {
 // CancelLatched says whether the fail-closed latch is set.
 func (r *Runtime) CancelLatched() bool { return r.cancel.Load() }
 
-// Settings are the attached session's settings in force (DefaultSettings
-// until set).
+// Settings are the attached session's settings in force (the device's
+// defaults, DefaultSettingsFor its Capabilities, until set).
 func (r *Runtime) Settings() Settings {
 	r.st.Lock()
 	defer r.st.Unlock()
@@ -185,7 +193,7 @@ func (r *Runtime) Settings() Settings {
 
 func (r *Runtime) settingsLocked() Settings {
 	if !r.hasSettings {
-		return DefaultSettings()
+		return DefaultSettingsFor(r.last.Capabilities)
 	}
 	return r.settings
 }
@@ -278,7 +286,7 @@ func (r *Runtime) setStatus(s Status) {
 	r.lastStatus, r.hasStatus = s, true
 }
 
-func (r *Runtime) clearArmLocked() { r.armDeadline = time.Time{} }
+func (r *Runtime) clearArmLocked() { r.armDeadline, r.renewedUntil = time.Time{}, time.Time{} }
 
 // -- connection ----------------------------------------------------------------
 
@@ -438,13 +446,16 @@ func (r *Runtime) Arm(ctx context.Context) error {
 		return err
 	}
 	r.armDeadline = r.now().Add(r.window())
+	// A device with its own countdown had it set to the window by Arm.
+	r.renewedUntil = r.armDeadline
 	r.log().Info("estim: armed", "window", r.window().String(), "power", powerMode)
 	return nil
 }
 
 // ExtendArm pushes the arm expiry forward without touching the device; a
 // renewal must not zero the outputs the way Arm does. False when there was
-// nothing to renew.
+// nothing to renew. A device with its own countdown catches up in the
+// health tick (RenewDeviceArm).
 func (r *Runtime) ExtendArm() bool {
 	r.st.Lock()
 	defer r.st.Unlock()
@@ -453,6 +464,38 @@ func (r *Runtime) ExtendArm() bool {
 	}
 	r.armDeadline = r.now().Add(r.window())
 	return true
+}
+
+// RenewDeviceArm brings a device's own countdown (ArmRenewer) up to the
+// arm window once the window has run more than RenewSlack ahead of it.
+// Nothing is written while a command holds the device; the next tick
+// catches up. A failed renewal is logged and left to HealthCheck: the
+// device still stops at the countdown it has.
+func (r *Runtime) RenewDeviceArm(ctx context.Context) {
+	r.st.Lock()
+	armed, deadline, last := r.armedLocked(), r.armDeadline, r.renewedUntil
+	r.st.Unlock()
+	if !armed || deadline.Sub(last) < RenewSlack {
+		return
+	}
+	if !r.dev.TryLock() {
+		return
+	}
+	defer r.dev.Unlock()
+	renewer, ok := r.device.(ArmRenewer)
+	if !ok {
+		return
+	}
+	if err := renewer.RenewArm(ctx, deadline); err != nil {
+		r.log().Warn("estim: renewing the device's countdown failed", "err", err)
+		return
+	}
+	r.st.Lock()
+	if r.armedLocked() {
+		r.renewedUntil = deadline
+	}
+	r.st.Unlock()
+	r.log().Debug("estim: device countdown renewed", "until", deadline.UTC().Format(time.RFC3339))
 }
 
 // Release fails closed: outputs to zero, knobs live, normal power, the arm
@@ -607,8 +650,9 @@ func (r *Runtime) Execute(ctx context.Context, cmd Command) (Result, Status, err
 
 // Run connects, then supervises until ctx ends: a full reading every
 // HealthInterval while a device is held, a reconnection attempt while none
-// is, the arm expiry, and telemetry sampling into the ring. On return the
-// device is released and closed.
+// is, the arm expiry, the device's own countdown (ArmRenewer), and
+// telemetry sampling into the ring. On return the device is released and
+// closed.
 func (r *Runtime) Run(ctx context.Context) {
 	started := r.now()
 	if err := r.Open(ctx); err != nil && ctx.Err() == nil {
@@ -644,6 +688,7 @@ func (r *Runtime) Run(ctx context.Context) {
 			if _, err := r.ReleaseIfArmExpired(ctx); err != nil && ctx.Err() == nil {
 				r.log().Warn("estim: release at arm expiry failed", "err", err)
 			}
+			r.RenewDeviceArm(ctx)
 		}
 	}
 }
