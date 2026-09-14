@@ -8,7 +8,7 @@ import (
 )
 
 func TestKindsAreKnownAndStable(t *testing.T) {
-	want := []estim.Kind{"mastago", "mk312bt", "estim-2b", "dglabs-coyote", "tens"}
+	want := []estim.Kind{"mastago", "estim-2b", "dglabs-coyote", "tens"}
 	if len(estim.Kinds) != len(want) {
 		t.Fatalf("Kinds = %v, want %v", estim.Kinds, want)
 	}

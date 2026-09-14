@@ -209,13 +209,6 @@ leaves Bluetooth alone. On Linux the connector talks to BlueZ over D-Bus,
 so your user needs to be allowed to use Bluetooth (usually the `bluetooth`
 group); on Windows there is no Bluetooth backend yet.
 
-The connector also serves a two-channel serial device over its FTDI link
-cable (`kind` `mk312bt`); `-estim-port /dev/cu.usbserial-XXXX` names the
-adapter when the scan picks the wrong one, `-estim-port off` leaves serial
-ports alone, and on Linux your user needs access to the serial device
-(usually the `dialout` group). Its specifics are in
-[docs/PROTOCOL.md](docs/PROTOCOL.md), section 7.4.
-
 What travels between the connector and the service for this is described in
 [docs/PROTOCOL.md](docs/PROTOCOL.md), section 7. It does not go through the
 camera tunnel and the enclave never sees it. The connector names the device

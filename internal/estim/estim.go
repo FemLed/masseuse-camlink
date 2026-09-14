@@ -32,9 +32,6 @@ const (
 	// stimulation unit over Bluetooth Low Energy: the connector's
 	// reference device, the one the documentation is written around.
 	KindMastago Kind = "mastago"
-	// KindMK312BT is a two-channel pattern-based stimulation device over a
-	// serial link.
-	KindMK312BT Kind = "mk312bt"
 	// KindEstim2B is the E-Stim Systems 2B over its serial link.
 	KindEstim2B Kind = "estim-2b"
 	// KindCoyote is the DG-Lab Coyote, a Bluetooth Low Energy device.
@@ -46,7 +43,7 @@ const (
 
 // Kinds lists every device family the Descriptor may name, in the order
 // above.
-var Kinds = []Kind{KindMastago, KindMK312BT, KindEstim2B, KindCoyote, KindTENS}
+var Kinds = []Kind{KindMastago, KindEstim2B, KindCoyote, KindTENS}
 
 // Known reports whether k is one of Kinds.
 func (k Kind) Known() bool {

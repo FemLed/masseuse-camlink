@@ -177,7 +177,7 @@ on your network, to the enclave of a masseuse.ai session.
 
   masseuse-camlink                    run with the remembered (or first) camera and microphone
   masseuse-camlink devices            list cameras and microphones
-  masseuse-camlink estim probe        find the stimulation device (Bluetooth, USB serial) and print its status
+  masseuse-camlink estim probe        find the stimulation unit over Bluetooth and print its status
   masseuse-camlink -camera 1 -mic 0   choose by number or by (part of) the name; remembered
   masseuse-camlink -camera-url rtsps://user:password@192.168.1.20:322/live
                                       send a camera on your network instead

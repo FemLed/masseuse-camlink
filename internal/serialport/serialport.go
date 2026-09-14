@@ -102,7 +102,7 @@ func (p *port) ResetInput() error { return p.Port.ResetInputBuffer() }
 
 // Candidate is a serial port that may lead to a device.
 type Candidate struct {
-	// Path opens it: /dev/cu.usbserial-AB0JQ5W9 on macOS, /dev/ttyUSB0 on
+	// Path opens it: /dev/cu.usbserial-A1B2C3D4 on macOS, /dev/ttyUSB0 on
 	// Linux, COM5 on Windows.
 	Path string
 	// VendorID and ProductID are the USB ids when the system publishes them;

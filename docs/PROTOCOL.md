@@ -550,7 +550,6 @@ not this program carries a driver for the family:
 | `kind` | device | driver in this program |
 |---|---|---|
 | `mastago` | Mastago TENS unit, Bluetooth Low Energy | yes |
-| `mk312bt` | a two-channel pattern-based device, serial link | yes (section 7.4) |
 | `estim-2b` | E-Stim Systems 2B, serial link | not yet |
 | `dglabs-coyote` | DG-Lab Coyote, Bluetooth Low Energy | not yet |
 | `tens` | any other transcutaneous electrical nerve stimulation unit | not yet |
@@ -609,33 +608,3 @@ caps, the arm window, the fail-closed rules and the program list above are
 this program's, and its releases are reproducible (VERIFY.md). The person
 at the computer stops everything with Ctrl-C, by ending the session on the
 phone, or with the device's own power button.
-
-### 7.4 The serial device
-
-The serial family (`kind` `mk312bt`, `-estim-port`) is a two-channel
-pattern-based device over its serial link cable (an FTDI adapter; 19200
-baud, 8N1), registered from `cmd/masseuse-camlink/drivers_serial.go`. Its
-finder lists the USB serial adapters the system publishes
-(`/dev/cu.usbserial*` and the system profiler on macOS, `/sys/class/tty` on
-Linux, the registry on Windows) and probes them, FTDI parts first. A probe
-listens before it speaks: an idle device beacons `0x07` continuously, so
-it is recognized without a byte being written to a port that may belong to
-something else. A silent port is spoken to only when the adapter is an
-FTDI part (or was named with `-estim-port`), and then with two sync bytes:
-a device still holding an old session key answers at once and is reported
-as needing a power cycle; an empty port costs one short try. A session key
-agreed with the device is kept in the state directory (`mk312-key`, mode
-0600) so a connector that restarts mid-session resumes the device instead
-of needing it power-cycled; the key is forgotten when the device is unkeyed
-at close.
-
-What the connector holds this device to: Channel A only, Channel B written
-to zero before and after every command; level at most the session's
-maximum (85 until the session sets one) on its 0..99 scale, one step per
-quarter second with a read-back at every step; the tempo control
-(`set_ma`, `adjust_ma`) 0..100 percent of the loaded pattern's range;
-patterns from a fixed allow-list of its own pattern numbers
-(`0x76..0x7B`, `0x80..0x84`); the power range normal while released and,
-while armed, the session's choice of normal or high (high until the
-session sets one), the low range never selected. Its status carries the
-loaded pattern's modulation state described in 7.3.

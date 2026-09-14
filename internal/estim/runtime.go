@@ -16,8 +16,9 @@ const (
 	MaxArmWindow = 30 * time.Minute
 	// HealthInterval is how often the device is read in full while idle.
 	HealthInterval = 5 * time.Second
-	// TelemetryInterval is the sampling period (2 Hz). A frame costs 12-16
-	// serial round trips, so this leaves about half the bus for commands.
+	// TelemetryInterval is the sampling period (2 Hz). A frame costs a few
+	// round trips to the device, so this leaves most of the link for
+	// commands.
 	TelemetryInterval = 500 * time.Millisecond
 	// RingCapacity is two minutes of frames; with nothing draining, the
 	// oldest are dropped.

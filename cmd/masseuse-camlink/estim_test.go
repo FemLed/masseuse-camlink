@@ -18,8 +18,6 @@ import (
 	"github.com/FemLed/masseuse-camlink/internal/estim"
 	"github.com/FemLed/masseuse-camlink/internal/estim/mastago"
 	"github.com/FemLed/masseuse-camlink/internal/estim/mastago/fakeunit"
-	"github.com/FemLed/masseuse-camlink/internal/estim/mk312"
-	"github.com/FemLed/masseuse-camlink/internal/estim/mk312/fakebox"
 	"github.com/FemLed/masseuse-camlink/internal/identity"
 	"github.com/FemLed/masseuse-camlink/internal/rendezvous"
 )
@@ -114,87 +112,6 @@ func (s *estimService) waitFor(t *testing.T, typ string) (string, map[string]any
 	return "", nil
 }
 
-func TestEstimLinkEndToEnd(t *testing.T) {
-	svc := &estimService{}
-	srv := httptest.NewServer(svc.handler())
-	defer srv.Close()
-	id, err := identity.Load(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	box := fakebox.New()
-	var out console
-	link := newEstimLink(t.TempDir(), log, func(format string, args ...any) { _, _ = out.Write([]byte(strings.TrimSpace(format))) })
-	link.rt.Connect = func(ctx context.Context) (estim.Driver, error) {
-		box.Reopen()
-		dev := mk312.New(box, "fake")
-		dev.Sleep = func(context.Context, time.Duration) error { return nil }
-		dev.Timeout = 30 * time.Millisecond
-		dev.Ramp = 0
-		return mk312.Connect(ctx, dev, nil, nil)
-	}
-	link.client = &rendezvous.Client{Service: srv.URL, Identity: id, Version: "test", HTTP: srv.Client(), Logger: log}
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan struct{})
-	go func() { defer close(done); link.run(ctx) }()
-
-	// The device is found, released, and reported at connector level.
-	sid, dev := svc.waitFor(t, "device")
-	if sid != "" || dev["kind"] != "mk312bt" || dev["connected"] != true {
-		t.Fatalf("device report %q %v", sid, dev)
-	}
-	if !strings.Contains(out.String(), "Stimulation device connected") {
-		t.Fatalf("console: %q", out.String())
-	}
-	mgr := &manager{log: log, estim: link, tunnels: map[string]*active{}}
-
-	// The service attaches a session: the device arms and reports so.
-	mgr.OnEstim("s1", json.RawMessage(`{"type":"control","payload":{"type":"companion_attached","sessionId":"s1","levelCap":85}}`))
-	deadline := time.Now().Add(5 * time.Second)
-	for !link.rt.Armed() && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	if !link.rt.Armed() || box.Power() != mk312.PowerHigh {
-		t.Fatal("attach did not arm")
-	}
-	mgr.OnEstim("s1", json.RawMessage(`{"type":"control","payload":{"type":"mk312_command","commandId":"c1","sessionId":"s1","command":{"verb":"set_level","channel":"a","level":6}}}`))
-	sid, ack := svc.waitFor(t, "device_ack")
-	if sid != "s1" || ack["ok"] != true || box.LevelA() != 6 {
-		t.Fatalf("ack %q %v (level %d)", sid, ack, box.LevelA())
-	}
-	// A hello after a reconnect repeats the device report.
-	before := len(svc.posts)
-	mgr.OnOnline(true)
-	deadline = time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		svc.mu.Lock()
-		n := len(svc.posts)
-		svc.mu.Unlock()
-		if n > before {
-			break
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	// The service clearing the session releases the device.
-	mgr.OnClear("s1", "session ended")
-	if _, attached := link.session.Attached(); attached || link.rt.Armed() || box.LevelA() != 0 {
-		t.Fatal("clear did not release")
-	}
-	if _, m := svc.waitFor(t, "detached"); m["reason"] != "session cleared" {
-		t.Fatalf("detached %v", m)
-	}
-	cancel()
-	select {
-	case <-done:
-	case <-time.After(10 * time.Second):
-		t.Fatal("link did not stop")
-	}
-	if box.Key() != mk312.NoKey || !box.Closed() {
-		t.Fatal("exit must unkey and close the device")
-	}
-}
-
 // TestEstimLinkBluetoothUnit runs the link against a fake Mastago unit
 // through the registered finder, the way the program does: found,
 // released, reported as kind mastago, armed with its countdown set,
@@ -277,9 +194,41 @@ func TestEstimLinkBluetoothUnit(t *testing.T) {
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
+	// A hello after a reconnect repeats the device report.
+	svc.mu.Lock()
+	before := len(svc.posts)
+	svc.mu.Unlock()
+	mgr.OnOnline(true)
+	deadline = time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		svc.mu.Lock()
+		n := len(svc.posts)
+		svc.mu.Unlock()
+		if n > before {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	svc.mu.Lock()
+	repeated := false
+	for _, p := range svc.posts[before:] {
+		for _, m := range p.messages {
+			if m["type"] == "device" && m["kind"] == "mastago" {
+				repeated = true
+			}
+		}
+	}
+	svc.mu.Unlock()
+	if !repeated {
+		t.Fatal("the device report was not repeated after the reconnect")
+	}
+	// The service clearing the session releases the device and says so.
 	mgr.OnClear("s1", "session ended")
 	if _, attached := link.session.Attached(); attached || link.rt.Armed() || unit.Level() != 0 || unit.Outputting() {
 		t.Fatal("clear did not release")
+	}
+	if _, m := svc.waitFor(t, "detached"); m["reason"] != "session cleared" {
+		t.Fatalf("detached %v", m)
 	}
 	cancel()
 	select {
