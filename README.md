@@ -16,7 +16,7 @@ the stream goes from your computer to the enclave inside TLS.
 
 ## Install
 
-On the computer in the room, open [masseuse.ai/computer](https://masseuse.ai/computer):
+On the computer in the room, open [masseuse.ai/app](https://masseuse.ai/app):
 it offers the download for that computer (Mac, Windows, Linux), and the app
 on your phone can send it the address. The same files are on the
 [releases page](https://github.com/FemLed/masseuse-camlink/releases).
