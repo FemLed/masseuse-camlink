@@ -280,16 +280,20 @@ if [ -s checksums-windows.txt ] || curl -fsSL -o checksums-windows.txt "$base/ch
     --certificate-identity-regexp "$WORKFLOW_RE" \
     --certificate-oidc-issuer "$ISSUER" \
     checksums-windows.txt
-  awk '{print $2}' checksums-windows.txt | while read -r f; do fetch "$f"; done
+  # v0.8.1's file was written by sha256sum on Windows, in its binary-mode
+  # form "<hash> *<name>": the name is taken without the marker (sha256sum -c
+  # and shasum -c read either form).
+  winfiles() { awk '{print $2}' checksums-windows.txt | sed 's/^\*//'; }
+  winfiles | while read -r f; do fetch "$f"; done
   $SHA -c checksums-windows.txt
-  awk '{print $2}' checksums-windows.txt | while read -r f; do
+  winfiles | while read -r f; do
     slsa-verifier verify-artifact "$f" \
       --provenance-path windows.intoto.jsonl \
       --source-uri "github.com/$REPO" \
       --source-tag "$tag" >/dev/null
     echo "    ok  $f"
   done
-  zipfile=$(awk '{print $2}' checksums-windows.txt | grep -E '\.zip$' | head -n 1)
+  zipfile=$(winfiles | grep -E '\.zip$' | head -n 1)
   archive="masseuse-camlink_${version}_windows_amd64.zip"
   if [ -n "$zipfile" ] && [ -s "$zipfile" ] && [ -s "$archive" ] && command -v unzip >/dev/null 2>&1; then
     packed=$(unzip -p "$zipfile" Masseuse.ai.exe | $SHA | cut -d' ' -f1)
