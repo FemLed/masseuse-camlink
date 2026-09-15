@@ -212,9 +212,10 @@ if [ -s checksums-darwin.txt ] || curl -fsSL -o checksums-darwin.txt "$base/chec
       --source-tag "$tag" >/dev/null
     echo "    ok  $f"
   done
-  # The disk image is Masseuse.ai-X.Y.Z.dmg holding Masseuse.ai.app from
-  # v0.8.0; earlier releases named both masseuse-camlink. Either is read off
-  # the checksum file.
+  # The disk image is Masseuse.ai-X.Y.Z.dmg holding Masseuse.app (v0.8.2 on;
+  # Masseuse.ai.app in v0.8.0 and v0.8.1, masseuse-camlink.app and
+  # masseuse-camlink_*.dmg before). The image is read off the checksum file
+  # and the bundle found by its extension, so all of them verify.
   dmg=$(awk '{print $2}' checksums-darwin.txt | grep -E '\.dmg$' | head -n 1)
   if [ "$(uname -s)" = "Darwin" ] && [ -n "$dmg" ] && [ -s "$dmg" ]; then
     echo "==> 8b. the app itself (this is a Mac)"

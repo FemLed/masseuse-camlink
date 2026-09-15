@@ -215,7 +215,7 @@ on your network, to the enclave of a masseuse.ai session.
                                       send a camera on your network instead
 
 The downloads at masseuse.ai/app are this same program under the name
-Masseuse.ai: on a Mac the application bundle (Masseuse.ai.app) runs it in a
+Masseuse.ai: on a Mac the application bundle (Masseuse.app) runs it in a
 Terminal window when opened (-console and -app choose either way by hand); on
 Windows, Masseuse.ai.exe opens its own console window, with ffmpeg.exe beside it.
 
