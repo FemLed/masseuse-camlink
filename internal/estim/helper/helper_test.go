@@ -497,3 +497,25 @@ func TestASpawnedHelperProgramServesOverItsStdio(t *testing.T) {
 		t.Fatalf("the helper's stderr did not reach the log:\n%s", logged.String())
 	}
 }
+
+func TestNoDeviceCrossesTheWireOnceWorded(t *testing.T) {
+	ctx := context.Background()
+	finder := &fakeFinder{unit: newFakeDriver("port-1"), fail: fmt.Errorf("%w: nothing on any port", estim.ErrNoDevice)}
+	p := &pipes{}
+	h := helper.New("camlink-unit-test", t.TempDir(), nil)
+	h.Start = p.start(finder, helper.Options{Name: "fake", Kinds: []estim.Kind{"fakekind"}})
+	t.Cleanup(func() { _ = h.Close() })
+	_, err := h.Find(ctx)
+	if !errors.Is(err, estim.ErrNoDevice) {
+		t.Fatalf("find = %v", err)
+	}
+	if got, want := err.Error(), estim.ErrNoDevice.Error()+": nothing on any port"; got != want {
+		t.Fatalf("worded %q, want %q", got, want)
+	}
+	// The bare error, no detail.
+	finder.fail = estim.ErrNoDevice
+	_, err = h.Find(ctx)
+	if !errors.Is(err, estim.ErrNoDevice) || err.Error() != estim.ErrNoDevice.Error() {
+		t.Fatalf("bare find = %v", err)
+	}
+}
