@@ -59,7 +59,7 @@ Masseuse.app/Contents/
 | --- | --- |
 | `Info.plist` | the bundle's property list, `@VERSION@` filled in by `build-app.sh`; `CFBundleName`, `CFBundleDisplayName` and `CFBundleExecutable` all `Masseuse`, the bundle's name (above); `LSMinimumSystemVersion` 13.0 (Go's floor for macOS binaries), `LSUIElement`, the camera, microphone and Bluetooth usage strings |
 | `ffmpeg.entitlements` | camera and microphone, which a hardened-runtime process may open only with these |
-| `build-app.sh` | assembles the bundle from a connector binary, `packaging/ffmpeg/build.sh`'s output and the files here, and compiles the macOS 26 icon with `actool` (Xcode 26 or later; `DEVELOPER_DIR` picks one when the default is older); `sh` otherwise, runs unsigned in `ci.yml` on every pull request |
+| `build-app.sh` | assembles the bundle from a connector binary, `packaging/ffmpeg/build.sh`'s output and the files here, and compiles the macOS 26 icon with `actool` (Xcode 26 or later, on macOS 26; `DEVELOPER_DIR` picks an Xcode when the selected one is older); `sh` otherwise, runs unsigned in `ci.yml` on every pull request |
 | `sign-notarize.sh` | temporary keychain from the release secrets, `codesign` (ffmpeg first, then the bundle, `--options runtime --timestamp`), `notarytool submit --wait`, `stapler staple`; the same for the disk image. The identity is picked by the certificate's SHA-1 from VERIFY.md, never by its subject, and the subject is never printed |
 | `assess.sh` | the gates: `codesign --verify --deep --strict`, `spctl --assess --type execute` (bundle) and `--type open --context context:primary-signature` (image) answering `accepted` with `source=Notarized Developer ID`, `stapler validate`; the release fails if any is false |
 | `build-dmg.sh` | the app and an `Applications` shortcut on an HFS+ image named `Masseuse.ai` with the volume icon set, compressed read-only (`hdiutil`); file name `Masseuse.ai-<version>.dmg` |
@@ -68,7 +68,7 @@ Masseuse.app/Contents/
 | `masseuse-camlink.icon/` | the icon as layers, for macOS 26 (below): an Icon Composer document, `icon.json` and three SVGs, which `build-app.sh` compiles into the bundle's `Assets.car`; `CFBundleIconName` points at it |
 
 The release workflow (`.github/workflows/release.yml`, job `macos-app`) runs
-them in this order on a macOS runner, after goreleaser has published the
+them in this order on a macOS 26 runner, after goreleaser has published the
 archives: verify the two darwin archives against the signed
 `checksums.txt`, `lipo -create` the connectors, build or restore ffmpeg,
 `build-app.sh`, `sign-notarize.sh app`, `assess.sh app`, `build-dmg.sh`,
@@ -80,8 +80,8 @@ architecture, equals that of the archives' binaries) and the upload with
 it from the outside.
 
 To build an unsigned bundle by hand for a look (the signing needs the
-release secrets; the icon needs Xcode 26 or later selected, `xcode-select
--p`, or named in `DEVELOPER_DIR`):
+release secrets; the icon needs macOS 26 with Xcode 26 or later selected,
+`xcode-select -p`, or named in `DEVELOPER_DIR`):
 
 ```sh
 go build -trimpath -buildvcs=false -ldflags='-s -w -buildid=' -o dist/masseuse-camlink ./cmd/masseuse-camlink
@@ -117,8 +117,9 @@ layers with the system's edge light and a soft shadow, no translucency, so
 the M stays the wordmark's white) and `Assets/m.svg`, `wave.svg`,
 `pads.svg`, the mark's parts on the 1024 canvas, the pads spanning 80 % of
 it as they span 80 % of the old tile. `build-app.sh` compiles it with
-`actool` (Xcode 26 or later; the release and CI runners select
-`Xcode_26.1.1` through `DEVELOPER_DIR`) into `Contents/Resources/Assets.car`,
+`actool` (Xcode 26 or later, and on macOS 26: on macOS 15 the tool's
+asset runtime crashes, so the release and CI jobs that build the bundle run
+on `macos-26` images) into `Contents/Resources/Assets.car`,
 which `CFBundleIconName` (`masseuse-camlink`, the icns's name too) points
 at. macOS 26 reads the catalog; macOS 13 to 15 find a flattened rendering
 of the same layers in it, which `actool` adds in every size, and the icns
