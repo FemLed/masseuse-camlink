@@ -183,27 +183,38 @@ Helpers are published as their own release, apart from the connector's:
   "camlink-unit-<name>[.exe]", "os": "darwin|windows|linux", "arch":
   "all|amd64|arm64|arm", "sha256": "<hex>", "kinds": ["<kind>", ...]},
   ...]}`, one entry per helper per operating system and architecture, the
-  hash that of the file as published, unsigned. For macOS there are three
-  entries per helper: `arm64` and `amd64`, the thin binaries, and `all`,
-  the two joined with `lipo`, which is what the application bundle takes;
-  a signed universal helper in a bundle is compared with the thin entries
-  through `machostrip` (VERIFY.md);
-- `manifest.json.sig`: a cosign signature over the manifest by the
-  helpers' signing key, whose public half is `packaging/units/cosign.pub`
-  in this repository;
+  hash that of the file as published. For macOS there are three entries
+  per helper: `arm64` and `amd64`, the thin binaries, and `all`, the two
+  joined with `lipo`, which is what the application bundle takes; a signed
+  universal helper in a bundle is compared with the thin files through
+  `machostrip`, signatures stripped on both sides (VERIFY.md);
+- `manifest.json.sigstore.json`: a cosign bundle over the manifest, the
+  helpers' signing key's signature with its entry in the Rekor transparency
+  log; the key's public half is `packaging/units/cosign.pub` in this
+  repository, and `cosign verify-blob --key cosign.pub --bundle
+  manifest.json.sigstore.json manifest.json` is the check;
 - one file per entry, at `<os>_<arch>/<name>`.
 
 `packaging/units/VERSION` in this repository pins the helpers version a
 connector release bundles, and `packaging/units/fetch.sh <version> <os>
 <arch> <outdir>` is how the release workflow gets them: it downloads the
-manifest and its signature, checks the signature with `cosign verify-blob
+manifest and its bundle, checks the signature with `cosign verify-blob
 --key packaging/units/cosign.pub`, downloads each file for that platform
 and checks its SHA-256 against the manifest, and refuses anything that
-does not match. Nothing in this repository needs a secret to build; the
-release workflow fetches and verifies, then bundles and signs the helpers
-with the connector's own identity: on macOS each helper is codesigned
-(identifier `ai.masseuse.camlink.unit.<name>`, hardened runtime) before
-the bundle is, like `Contents/Helpers/ffmpeg`, and notarized with it.
+does not match (nothing is left in `<outdir>` then). Nothing in this
+repository needs a secret to build; the release workflow fetches and
+verifies on every runner that packs helpers (`.github/workflows/release.yml`),
+then bundles them: goreleaser packs `units/` into each archive
+(`.goreleaser.yaml`), `packaging/windows/build-zip.sh -u` packs `units\`
+into the Windows zip, and `packaging/macos/build-app.sh -u` copies the
+universal ones into `Contents/Helpers/units/`, where
+`packaging/macos/sign-notarize.sh` codesigns each (identifier
+`ai.masseuse.camlink.unit.<name>`, hardened runtime, no entitlements)
+before the bundle, like `Contents/Helpers/ffmpeg`, and notarizes them with
+it. The release then checks that each bundled helper, signature stripped,
+hashes to the manifest's entry for its architecture, and that the bundled
+connector names its helpers when run. `ci.yml` does the fetch and the
+unsigned bundle and zip on every pull request.
 
 What that gives someone checking a release (VERIFY.md, "Unit driver
 helpers"): the connector binary is reproducible from this repository as

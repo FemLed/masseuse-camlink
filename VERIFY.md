@@ -30,7 +30,7 @@ disk image are in addition signed with an Apple Developer ID and notarized
 and how to compare them with a rebuild regardless).
 
 `sh scripts/verify-release.sh vX.Y.Z` runs the release checks below (1 to 3,
-the macOS app and the Windows package included); `sh scripts/verify-enclave.sh`
+the macOS app, the Windows package and the unit driver helpers included); `sh scripts/verify-enclave.sh`
 runs the enclave check (4). (Both are plain POSIX sh; the repository stores
 them without the executable bit.)
 
@@ -333,25 +333,33 @@ helpers themselves are at `https://masseuse.ai/app/units/<version>/`:
 V=$(curl -fsSL https://raw.githubusercontent.com/FemLed/masseuse-camlink/vX.Y.Z/packaging/units/VERSION)
 curl -fsSLO https://raw.githubusercontent.com/FemLed/masseuse-camlink/vX.Y.Z/packaging/units/cosign.pub
 curl -fsSLO "https://masseuse.ai/app/units/$V/manifest.json"
-curl -fsSLO "https://masseuse.ai/app/units/$V/manifest.json.sig"
-cosign verify-blob --key cosign.pub --signature manifest.json.sig manifest.json
+curl -fsSLO "https://masseuse.ai/app/units/$V/manifest.json.sigstore.json"
+cosign verify-blob --key cosign.pub --bundle manifest.json.sigstore.json manifest.json
 jq -r '.files[] | "\(.os)/\(.arch)  \(.sha256)  \(.name)"' manifest.json
 ```
 
 The manifest names each helper once per operating system and
-architecture, with the hash of the file as published, unsigned. In the
-Mac bundle the helpers are universal binaries signed with the same
-Developer ID as the app, so they are compared the way the app's executable
-is, with `machostrip`, which removes the signature and hashes each
-architecture on its own:
+architecture, with the hash of the file as published. In the Mac bundle
+the helpers are universal binaries signed with the same Developer ID as
+the app, so they are compared the way the app's executable is, with
+`machostrip`, which removes the signature and hashes each architecture on
+its own; the other side is the thin `darwin/arm64` and `darwin/amd64`
+files, fetched and checked against the manifest by `packaging/units/fetch.sh`
+and stripped the same way (Go's linker gives a darwin/arm64 binary an
+ad-hoc signature, so the thin arm64 file's raw hash is not its stripped
+one):
 
 ```sh
+for arch in arm64 amd64; do
+  sh packaging/units/fetch.sh "$V" darwin "$arch" "units-$arch"   # from the tag's checkout
+  go run github.com/FemLed/masseuse-camlink/cmd/machostrip@vX.Y.Z -sha256 units-$arch/camlink-unit-*
+done
 hdiutil attach -readonly -nobrowse Masseuse.ai-X.Y.Z.dmg
 for f in /Volumes/Masseuse.ai/Masseuse.app/Contents/Helpers/units/camlink-unit-*; do
   go run github.com/FemLed/masseuse-camlink/cmd/machostrip@vX.Y.Z -sha256 "$f"
 done
-# each "(arm64)" and "(amd64)" line is the manifest's darwin/arm64 or
-# darwin/amd64 hash for that helper
+# each "(arm64)" and "(amd64)" line of a bundled helper is the stripped
+# hash of the thin file of the same name for that architecture
 hdiutil detach /Volumes/Masseuse.ai
 ```
 
@@ -364,6 +372,9 @@ before it bundles anything, so a release whose helpers were not the
 manifest's would not have them, and `checksums.txt`, `checksums-darwin.txt`
 and `checksums-windows.txt` cover the archives, the image and the zip the
 helpers sit in, provenance and all.
+
+`scripts/verify-release.sh` runs the manifest check and the archive and
+zip comparisons as step 10 when the tag carries `packaging/units/VERSION`.
 
 A connector without helpers is this repository alone: remove
 `Contents/Helpers/units` (or run with `-estim-helpers none`) and it serves

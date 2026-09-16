@@ -34,6 +34,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FemLed/masseuse-camlink/internal/estim"
 )
@@ -192,6 +193,15 @@ func fromWire(e *wireError) error {
 	case CodeLoss:
 		return &estim.LossError{Reason: e.Reason, Err: errors.New(e.Message)}
 	case CodeNoDevice:
+		// The message is most often ErrNoDevice's own text with a detail
+		// after it; wrapping keeps errors.Is without saying it twice.
+		if detail, ok := strings.CutPrefix(e.Message, estim.ErrNoDevice.Error()); ok {
+			detail = strings.TrimPrefix(detail, ": ")
+			if detail == "" {
+				return estim.ErrNoDevice
+			}
+			return fmt.Errorf("%w: %s", estim.ErrNoDevice, detail)
+		}
 		return fmt.Errorf("%w: %s", estim.ErrNoDevice, e.Message)
 	case CodeCancelled:
 		return estim.ErrCancelled
