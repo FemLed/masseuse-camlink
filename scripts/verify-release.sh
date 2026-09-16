@@ -337,7 +337,7 @@ if curl -fsSL -o units-VERSION "$raw/VERSION" 2>/dev/null; then
     if [ -s "$archive" ]; then
       tar -tzf "$archive" | grep '^units/' | while read -r f; do
         name=${f#units/}
-        want=$(jq -r --arg n "$name" '.files[] | select(.name == $n and .os == "linux" and .arch == "amd64") | .sha256' units-manifest.json)
+        want=$(jq -r --arg n "$name" '.files[] | select(.name == $n and .os == "linux" and .arch == "amd64") | .sha256' units-manifest.json | tr -d '\r')
         got=$(tar -xzOf "$archive" "$f" | $SHA | cut -d' ' -f1)
         [ -n "$want" ] && [ "$got" = "$want" ] \
           || { echo "    MISMATCH: $f in $archive is not the manifest's ($got, manifest $want)" >&2; exit 1; }
@@ -349,7 +349,7 @@ if curl -fsSL -o units-VERSION "$raw/VERSION" 2>/dev/null; then
     if [ -s "$zipfile" ] && command -v unzip >/dev/null 2>&1; then
       unzip -Z1 "$zipfile" | grep '^units/' | while read -r f; do
         name=${f#units/}
-        want=$(jq -r --arg n "$name" '.files[] | select(.name == $n and .os == "windows" and .arch == "amd64") | .sha256' units-manifest.json)
+        want=$(jq -r --arg n "$name" '.files[] | select(.name == $n and .os == "windows" and .arch == "amd64") | .sha256' units-manifest.json | tr -d '\r')
         got=$(unzip -p "$zipfile" "$f" | $SHA | cut -d' ' -f1)
         [ -n "$want" ] && [ "$got" = "$want" ] \
           || { echo "    MISMATCH: $f in $zipfile is not the manifest's ($got, manifest $want)" >&2; exit 1; }

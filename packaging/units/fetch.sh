@@ -53,12 +53,13 @@ fetch "$base/manifest.json.sigstore.json" "$work/manifest.json.sigstore.json"
 cosign verify-blob --key "$pub" --bundle "$work/manifest.json.sigstore.json" "$work/manifest.json" >/dev/null 2>"$work/cosign.err" ||
   { cat "$work/cosign.err" >&2; echo "the manifest's signature does not verify with $pub" >&2; exit 1; }
 echo "manifest signed by the helpers' key"
-mversion=$(jq -r '.version' "$work/manifest.json")
+# jq on Windows ends its lines with CR LF; the CR is dropped everywhere.
+mversion=$(jq -r '.version' "$work/manifest.json" | tr -d '\r')
 [ "$mversion" = "$version" ] || { echo "the manifest says version $mversion, not $version" >&2; exit 1; }
 
 # The files for this platform: "name sha256" per line.
 jq -r --arg os "$os" --arg arch "$arch" '.files[] | select(.os == $os and .arch == $arch) | "\(.name) \(.sha256)"' \
-  "$work/manifest.json" > "$work/files.txt"
+  "$work/manifest.json" | tr -d '\r' > "$work/files.txt"
 [ -s "$work/files.txt" ] || { echo "the manifest lists no helper for $os/$arch" >&2; exit 1; }
 
 mkdir -p "$work/out"
