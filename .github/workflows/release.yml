@@ -304,6 +304,11 @@ jobs:
           path: dist/ffmpeg
           key: ${{ steps.ffmpeg-cache.outputs.cache-primary-key }}
       - name: Assemble the bundle
+        env:
+          # build-app.sh compiles the macOS 26 icon with actool, which must be
+          # Xcode 26's; the runner's default Xcode is older. ci.yml pins the
+          # same one.
+          DEVELOPER_DIR: /Applications/Xcode_26.1.1.app/Contents/Developer
         run: sh packaging/macos/build-app.sh -v "${GITHUB_REF_NAME#v}" -b dist/masseuse-camlink -f dist/ffmpeg -o dist
       - name: Sign, notarize and staple the bundle
         env:

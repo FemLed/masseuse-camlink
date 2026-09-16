@@ -76,6 +76,11 @@ jobs:
       - name: go test on macOS
         run: go test -count=1 ./cmd/... ./internal/capture/ ./internal/machosig/ ./internal/ble/
       - name: Unsigned bundle and disk image
+        env:
+          # build-app.sh compiles the macOS 26 icon with actool, which must be
+          # Xcode 26's; the runner's default Xcode is older. release.yml pins
+          # the same one.
+          DEVELOPER_DIR: /Applications/Xcode_26.1.1.app/Contents/Developer
         run: |
           mkdir -p dist/ffmpeg/licenses dist/ffmpeg/sources
           for arch in arm64 amd64; do
@@ -89,6 +94,10 @@ jobs:
           plutil -lint dist/Masseuse.app/Contents/Info.plist
           test "$(plutil -extract CFBundleExecutable raw -o - dist/Masseuse.app/Contents/Info.plist)" = Masseuse
           test "$(plutil -extract CFBundleDisplayName raw -o - dist/Masseuse.app/Contents/Info.plist)" = Masseuse
+          # The icon both ways: the icns, and the catalog with macOS 26's layered icon in it.
+          test -f dist/Masseuse.app/Contents/Resources/masseuse-camlink.icns
+          test "$(plutil -extract CFBundleIconName raw -o - dist/Masseuse.app/Contents/Info.plist)" = masseuse-camlink
+          assetutil --info dist/Masseuse.app/Contents/Resources/Assets.car | grep -q '"masseuse-camlink.iconstack"'
           test "$(lipo -archs dist/Masseuse.app/Contents/MacOS/Masseuse)" = "x86_64 arm64"
           go run ./cmd/machostrip -sha256 dist/Masseuse.app/Contents/MacOS/Masseuse
           # The bundle's own program, run from a shell, is the console program.
