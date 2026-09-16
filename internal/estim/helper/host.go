@@ -107,16 +107,43 @@ func (h *Host) Hello(ctx context.Context) (Hello, error) {
 	return *h.hello, nil
 }
 
-// Close ends the helper process, if any.
+// How long Close gives a helper to end on its own once its stdin is closed.
+const closeGrace = 2 * time.Second
+
+// Close ends the helper process, if any: its stdin is closed, which a
+// helper takes as the connector going away (Serve returns, closing the
+// device), and one that is still running after a moment is killed.
 func (h *Host) Close() error {
 	h.mu.Lock()
 	proc := h.proc
+	exited := h.exited
 	h.proc = Process{}
 	h.mu.Unlock()
+	if proc.Wait == nil && proc.Kill == nil {
+		return nil
+	}
+	if proc.Stdin != nil {
+		_ = proc.Stdin.Close()
+	}
+	if exited != nil {
+		select {
+		case <-exited:
+			return nil
+		case <-time.After(closeGrace):
+		}
+	}
 	if proc.Kill == nil {
 		return nil
 	}
-	return proc.Kill()
+	err := proc.Kill()
+	if exited != nil {
+		select {
+		case <-exited:
+			return nil // gone on its own meanwhile; the kill's error is moot
+		default:
+		}
+	}
+	return err
 }
 
 // ensure has the helper running and greeted.
