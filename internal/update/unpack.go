@@ -28,8 +28,11 @@ func Unpack(archive, dir string, maxTotal int64) error {
 
 // safeJoin is dir/name when name stays inside dir.
 func safeJoin(dir, name string) (string, error) {
+	if name == "" || strings.HasPrefix(name, "/") || strings.HasPrefix(name, "\\") || filepath.VolumeName(name) != "" || strings.Contains(name, "..") {
+		return "", fmt.Errorf("update: archive entry %q is not a plain relative path", name)
+	}
 	name = filepath.FromSlash(name)
-	if name == "" || filepath.IsAbs(name) || strings.Contains(name, "..") {
+	if filepath.IsAbs(name) {
 		return "", fmt.Errorf("update: archive entry %q is not a plain relative path", name)
 	}
 	p := filepath.Join(dir, name)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -38,9 +39,25 @@ func (a *acceptAll) VerifyBlobProvenance(_ context.Context, name string, _ []byt
 	return &provenance.BlobResult{Tag: a.tag, Identity: "generic generator for " + name}, nil
 }
 
+// tarOf is the release archive for this platform: a tar.gz, or on Windows
+// the zip the release ships there.
 func tarOf(t *testing.T, files map[string]string) []byte {
 	t.Helper()
 	var buf bytes.Buffer
+	if runtime.GOOS == "windows" {
+		zw := zip.NewWriter(&buf)
+		for name, content := range files {
+			h := &zip.FileHeader{Name: name, Method: zip.Deflate}
+			h.SetMode(0o755)
+			w, err := zw.CreateHeader(h)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, _ = w.Write([]byte(content))
+		}
+		_ = zw.Close()
+		return buf.Bytes()
+	}
 	gz := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gz)
 	for name, content := range files {
