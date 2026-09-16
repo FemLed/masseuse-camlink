@@ -38,7 +38,10 @@ running on that state directory, opening the app again only brings Terminal
 forward. The bundle is `LSUIElement`, so nothing bounces in the Dock.
 `ffmpeg` ships inside (`Contents/Helpers/ffmpeg`, built by
 `packaging/ffmpeg/build.sh`), and the connector looks there before it looks
-at `PATH`, so there is no Homebrew step.
+at `PATH`, so there is no Homebrew step. The unit driver helpers ship
+beside it (`Contents/Helpers/units/`, fetched and verified by
+`packaging/units/fetch.sh`; `docs/UNITS.md`), and the connector looks
+there for them; a bundle without that directory serves the Mastago alone.
 
 ```
 Masseuse.app/Contents/
@@ -46,6 +49,7 @@ Masseuse.app/Contents/
   PkgInfo
   MacOS/Masseuse                 the connector, universal, Developer ID + hardened runtime
   Helpers/ffmpeg                 universal, Developer ID + hardened runtime + ffmpeg.entitlements
+  Helpers/units/camlink-unit-*   unit driver helpers (docs/UNITS.md), universal, Developer ID + hardened runtime; from packaging/units/fetch.sh, absent in a build without them
   Resources/masseuse-camlink.icns  the icon for macOS 13 to 15 (CFBundleIconFile)
   Resources/Assets.car           the icon for macOS 26, compiled from masseuse-camlink.icon (CFBundleIconName)
   Resources/LICENSE, NOTICE      the connector's (Apache-2.0)
