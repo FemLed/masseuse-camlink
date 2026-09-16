@@ -23,14 +23,15 @@ func TestHelpersDirIsTheFlagOrTheBundlesPlace(t *testing.T) {
 	if got := helpersDir(" /opt/units ", "/x/masseuse-camlink"); got != "/opt/units" {
 		t.Fatalf("flag = %q", got)
 	}
-	app := "/Applications/Masseuse.app/Contents/MacOS/masseuse-camlink"
-	if got := bundledHelpersDir(app, "darwin"); got != "/Applications/Masseuse.app/Contents/Helpers/units" {
+	// Paths are compared with the host's separators: filepath does the joining.
+	app := filepath.Join("/", "Applications", "Masseuse.app", "Contents", "MacOS", "masseuse-camlink")
+	if got := bundledHelpersDir(app, "darwin"); got != filepath.Join("/", "Applications", "Masseuse.app", "Contents", "Helpers", "units") {
 		t.Fatalf("bundle = %q", got)
 	}
-	if got := bundledHelpersDir(`C:\Masseuse\masseuse-camlink.exe`, "windows"); filepath.Base(got) != "units" {
+	if got := bundledHelpersDir(filepath.Join("C:", "Masseuse", "masseuse-camlink.exe"), "windows"); filepath.Base(got) != "units" || filepath.Base(filepath.Dir(got)) != "Masseuse" {
 		t.Fatalf("windows = %q", got)
 	}
-	if got := bundledHelpersDir("/usr/local/bin/masseuse-camlink", "linux"); got != "/usr/local/bin/units" {
+	if got := bundledHelpersDir(filepath.Join("/", "usr", "local", "bin", "masseuse-camlink"), "linux"); got != filepath.Join("/", "usr", "local", "bin", "units") {
 		t.Fatalf("linux = %q", got)
 	}
 }
@@ -50,12 +51,14 @@ func TestHelperProgramsAreTheExecutablesWithThePrefix(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(dir, "camlink-unit-dir"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	got := helperPrograms(dir, "linux")
-	want := []string{filepath.Join(dir, "camlink-unit-a"), filepath.Join(dir, "camlink-unit-b"), filepath.Join(dir, "camlink-unit-w.exe")}
-	if strings.Join(got, ",") != strings.Join(want, ",") {
-		t.Fatalf("unix programs = %v", got)
+	if runtime.GOOS != "windows" { // the executable bit exists here
+		got := helperPrograms(dir, "linux")
+		want := []string{filepath.Join(dir, "camlink-unit-a"), filepath.Join(dir, "camlink-unit-b"), filepath.Join(dir, "camlink-unit-w.exe")}
+		if strings.Join(got, ",") != strings.Join(want, ",") {
+			t.Fatalf("unix programs = %v", got)
+		}
 	}
-	got = helperPrograms(dir, "windows")
+	got := helperPrograms(dir, "windows")
 	if len(got) != 1 || filepath.Base(got[0]) != "camlink-unit-w.exe" {
 		t.Fatalf("windows programs = %v", got)
 	}
