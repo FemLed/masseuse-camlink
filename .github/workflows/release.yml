@@ -518,7 +518,10 @@ jobs:
           echo "$out"
           echo "$out" | grep -q "^Downloaded and verified Masseuse.ai-${GITHUB_REF_NAME#v}.dmg"
           echo "$out" | grep -q "^Updated to ${GITHUB_REF_NAME}\."
-          test -d Applications/Masseuse.previous.app
+          # The previous bundle goes under the state directory, not beside
+          # the new one: the Applications folder shows one application.
+          test -d "${RUNNER_TEMP}/state-2/previous/Masseuse.app"
+          test "$(ls Applications | wc -l)" -eq 1
           test "$(Applications/Masseuse.app/Contents/MacOS/Masseuse --version | cut -d' ' -f1)" = "${GITHUB_REF_NAME}"
           codesign --verify --deep --strict Applications/Masseuse.app
           spctl --assess --type execute -vv Applications/Masseuse.app 2>&1 | grep -q accepted
