@@ -541,10 +541,12 @@ enclave image) before any file is moved:
 5. The new program's own `--version`, run from where it was staged, must
    print the tag.
 
-Only then is the running install renamed aside (`Masseuse.previous.app`,
+Only then is the running install renamed aside (a Mac bundle under the
+state directory's `previous/`, the files of the other layouts in
 `.previous/`) and the new one renamed in; the new program is started with
-the same arguments, and removes the previous install after its first
-connection to the service. A refusal at any step leaves the running program
+the same arguments (on a Mac by the Terminal window's shell, never by an
+exec of the running program: README.md, "Updates"), and removes the
+previous install after its first connection to the service. A refusal at any step leaves the running program
 as it is. The service at masseuse.ai plays no part: it names no version and
 serves no file. `masseuse-camlink update` runs the same steps from a
 terminal and prints what it verified; the release workflow runs it against
