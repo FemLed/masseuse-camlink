@@ -13,12 +13,16 @@
 // checksum that does not match, no disk space) leaves the running program
 // as it is and is reported once.
 //
-// Three install layouts are told apart from the program's own file: the
-// macOS application bundle (Masseuse.app, updated from the disk image),
-// the Windows package (the one Masseuse.exe carrying ffmpeg.exe and the
-// helpers as its payload, internal/payload, updated from the release's
-// Masseuse.exe), and a bare archive install (the binary with
-// units/ beside it, updated from the goreleaser archive for the platform).
+// Four install layouts are told apart, from the program's own file or
+// from the install root the desktop window names (DetectRoot): the macOS
+// application bundle (Masseuse.app, updated from the disk image), the
+// Windows package (the one Masseuse.exe carrying the connector, ffmpeg.exe
+// and the helpers as its payload, internal/payload, updated from the
+// release's Masseuse.exe), the Linux desktop archive (the window and the
+// connector in one directory, updated from the release's
+// Masseuse.ai-<version>-linux-<arch>.tar.gz), and a bare archive install
+// (the binary with units/ beside it, updated from the goreleaser archive
+// for the platform).
 package update
 
 import (

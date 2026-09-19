@@ -325,11 +325,12 @@ on your network, to the enclave of a masseuse.ai session.
                                       hand your phone's picture to OBS on this computer, and show OBS's
                                       virtual camera as your face; -face-camera none puts your phone back
 
-The downloads at masseuse.ai/app are this same program under the name
-Masseuse.ai: on a Mac the application bundle (Masseuse.app) runs it in a
-Terminal window when opened (-console and -app choose either way by hand); on
-Windows, Masseuse.exe opens its own console window, with ffmpeg and the unit
-drivers carried inside it and unpacked under the state directory.
+The downloads at masseuse.ai/app are a window around this same program, under
+the name Masseuse.ai: the window runs it with -ipc and shows what it says
+(docs/DESKTOP.md). On a Mac the program is Masseuse.app/Contents/MacOS/
+masseuse-camlink (-console runs it in a terminal; -app opens Terminal for
+it); on Windows it is unpacked from Masseuse.exe under the state directory
+with ffmpeg and the unit drivers; on Linux it lies beside the window.
 
 Flags:
 `)

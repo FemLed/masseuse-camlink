@@ -10,7 +10,12 @@
 # strings do, and the version is what the binary's build information says
 # (VERIFY.md, "What the version string tells you").
 #
-# usage: sh packaging/windows/make-syso.sh     (then commit the two .syso files)
+# The desktop window (desktop/) gets its own, desktop/rsrc_windows_amd64.syso,
+# from desktop/winres.json: the same icon and strings, and the application
+# manifest the window toolkit wants (per-monitor DPI awareness, common
+# controls v6; desktop/build/windows/wails.exe.manifest).
+#
+# usage: sh packaging/windows/make-syso.sh     (then commit the .syso files)
 # needs: go; go-winres is fetched at the pinned version below and run with
 #        go run, so nothing is installed.
 set -eu
@@ -30,3 +35,9 @@ for arch in amd64 arm64; do
   [ -s "$f" ] || { echo "go-winres did not write $f" >&2; exit 1; }
   echo "wrote $f ($(wc -c < "$f" | tr -d ' ') bytes)"
 done
+
+cd "$repo/desktop"
+GOFLAGS='' go run "$GO_WINRES" make --in winres.json --out rsrc --arch amd64
+f="$repo/desktop/rsrc_windows_amd64.syso"
+[ -s "$f" ] || { echo "go-winres did not write $f" >&2; exit 1; }
+echo "wrote $f ($(wc -c < "$f" | tr -d ' ') bytes)"
