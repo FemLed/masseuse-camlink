@@ -277,7 +277,9 @@ func TestHelpers(t *testing.T) {
 	if psQuote("it's") != "'it''s'" {
 		t.Fatal(psQuote("it's"))
 	}
-	if bundleRoot("/Applications/Masseuse.app/Contents/MacOS/Masseuse") != "/Applications/Masseuse.app" || bundleRoot("/usr/local/bin/Masseuse") != "" {
+	// filepath is the host's: the bundle's path is spelled its way.
+	app := filepath.FromSlash("/Applications/Masseuse.app")
+	if bundleRoot(filepath.Join(app, "Contents", "MacOS", "Masseuse")) != app || bundleRoot(filepath.FromSlash("/usr/local/bin/Masseuse")) != "" {
 		t.Fatal("bundleRoot")
 	}
 	dir := t.TempDir()
