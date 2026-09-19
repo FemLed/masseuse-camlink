@@ -135,15 +135,18 @@ out of sight (a Mac bundle under the state directory, `previous/`; the
 files of the other layouts in `.previous/` inside the install) until the
 new one has connected to the service once, then removed; if a new version
 would not start, the previous one is put back and the window says so.
-The restart itself is the window's shell's on a Mac: the `.command` file
-the bundle writes runs the program in a loop, and an update ends the
-program with exit code 75 for it to run the new version at the same path;
-a Mac program started some other way opens the new bundle through
+The restart itself is the shell's that started the program, when there is
+one: the desktop window, or the `.command` file the Mac bundle writes for
+Terminal, which runs the program in a loop. Either sets
+`MASSEUSE_CAMLINK_RELAUNCH=1`, and an update ends the program with exit
+code 75 for the shell to run the new version at the same path, on every
+system. A Mac program started some other way opens the new bundle through
 LaunchServices (a window of its own) and ends. The program never replaces
 itself by `execve` there: Go's runtime, before an exec on Darwin, waits for
 every preemption signal it has sent to be received, and a program that runs
 Go code on CoreBluetooth's threads can wait forever (`update.ErrRelaunch`).
-Linux keeps the exec; Windows starts the new program and ends.
+Without a shell, Linux keeps the exec and Windows starts the new program
+and ends.
 
 `-no-update` (or `MASSEUSE_CAMLINK_UPDATE=off`) turns it off, for people
 who manage their installs; `masseuse-camlink update` installs the latest
@@ -152,6 +155,23 @@ working tree and the container image do not update themselves (the image
 is updated by its tag). Whatever the update did is what an install by
 hand would have done: the same release files, the same checks
 (VERIFY.md, "What the updater verifies").
+
+### The desktop window
+
+The connector has no window of its own; the desktop application
+(`desktop/`, docs/DESKTOP.md) is a separate program that runs it as a
+child with `-ipc` and shows what it says. In that mode everything the
+console would print goes out on standard output as one JSON object per
+line (`hello`, `code`, `source`, `link`, `camera`, `units`, `device`,
+`update`, `notice`, `blocked`, ...), the window's requests come in on
+standard input the same way (`list_devices`, `set_source`, `select_unit`,
+`update_now`, `quit`), and the log stays on standard error. Standard input
+ending is a shutdown, so a window that was killed never leaves a connector
+behind. `-install-root` names what the window was started from
+(`Masseuse.app`, `Masseuse.exe`, or the directory of the Linux desktop
+archive), which is what an update then replaces, the window included. The
+flags are the window's to pass; from a terminal, `masseuse-camlink` alone
+is the program as described above.
 
 ## Use your computer's camera
 

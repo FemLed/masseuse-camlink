@@ -76,6 +76,10 @@ const (
 	// under the state directory when it runs. Until v0.12 the package was
 	// a zip with those files beside an executable called Masseuse.ai.exe.
 	LayoutPackage
+	// LayoutDesktop is the Linux desktop archive: the desktop window
+	// (Masseuse), the connector and units/ in one directory, updated from
+	// the release's Masseuse.ai-<version>-linux-<arch>.tar.gz.
+	LayoutDesktop
 )
 
 func (l Layout) String() string {
@@ -84,6 +88,8 @@ func (l Layout) String() string {
 		return "bundle"
 	case LayoutPackage:
 		return "package"
+	case LayoutDesktop:
+		return "desktop"
 	}
 	return "archive"
 }
@@ -133,6 +139,39 @@ func Detect(exe, goos, goarch string) Install {
 	return in
 }
 
+// DetectRoot is Detect for a connector the desktop window runs (its
+// -install-root): root is what the window was started from and what an
+// update replaces, the window included. A path ending in .app is the
+// bundle; a path ending in .exe is the Windows package, the window's
+// executable being what is swapped and whose --version is checked; a
+// directory is the Linux desktop archive. Anything else is refused.
+func DetectRoot(exe, root, goos, goarch string) (Install, error) {
+	in := Install{Exe: exe, GOOS: goos, GOARCH: goarch}
+	if goarch == "arm" {
+		in.GOARM = "7"
+	}
+	root = filepath.Clean(root)
+	fi, err := os.Stat(root)
+	if err != nil {
+		return in, fmt.Errorf("update: install root: %w", err)
+	}
+	switch {
+	case goos == "darwin" && strings.HasSuffix(root, ".app") && fi.IsDir():
+		in.Layout = LayoutBundle
+		in.Root = root
+	case goos == "windows" && strings.EqualFold(filepath.Ext(root), ".exe") && !fi.IsDir():
+		in.Layout = LayoutPackage
+		in.Root = filepath.Dir(root)
+		in.Exe = root
+	case fi.IsDir():
+		in.Layout = LayoutDesktop
+		in.Root = root
+	default:
+		return in, fmt.Errorf("update: install root %s is neither an application bundle, a package executable nor a directory", root)
+	}
+	return in, nil
+}
+
 // Artifact names the release asset an update of this install takes, the
 // checksum file that lists it, and the provenance file that covers it,
 // for the release tag.
@@ -143,6 +182,8 @@ func (in Install) Artifact(tag string) (name, checksums, provenanceFile string) 
 		return "Masseuse.ai-" + version + ".dmg", "checksums-darwin.txt", "darwin.intoto.jsonl"
 	case LayoutPackage:
 		return PackageExe, "checksums-windows.txt", "windows.intoto.jsonl"
+	case LayoutDesktop:
+		return "Masseuse.ai-" + version + "-" + in.GOOS + "-" + in.GOARCH + ".tar.gz", "checksums-" + in.GOOS + ".txt", in.GOOS + ".intoto.jsonl"
 	}
 	arch := in.GOARCH
 	if arch == "arm" && in.GOARM != "" {
