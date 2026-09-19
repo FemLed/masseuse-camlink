@@ -593,8 +593,10 @@ enclave image) before any file is moved:
 Only then is the running install renamed aside (a Mac bundle under the
 state directory's `previous/`, the files of the other layouts in
 `.previous/`) and the new one renamed in; the new program is started with
-the same arguments (on a Mac by the Terminal window's shell, never by an
-exec of the running program: README.md, "Updates"), and removes the
+the same arguments (by the shell that started the running one when there
+is one, the desktop window or the Terminal window's `.command` loop, on its
+exit code 75; on a Mac never by an exec of the running program: README.md,
+"Updates"), and removes the
 previous install after its first connection to the service. A refusal at any step leaves the running program
 as it is. The service at masseuse.ai plays no part: it names no version and
 serves no file. `masseuse-camlink update` runs the same steps from a
