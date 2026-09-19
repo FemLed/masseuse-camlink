@@ -1,3 +1,7 @@
 # The recorded release files are verified byte for byte against their
 # signatures: no line-ending conversion anywhere.
 internal/provenance/testdata/release/* -text
+
+# The window's application manifest goes into a resource object byte for byte
+# (packaging/windows/make-syso.sh), so the object is the same from every checkout.
+desktop/masseuse.exe.manifest -text

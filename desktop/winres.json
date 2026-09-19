@@ -6,7 +6,7 @@
   },
   "RT_MANIFEST": {
     "#1": {
-      "0409": "build/windows/wails.exe.manifest"
+      "0409": "masseuse.exe.manifest"
     }
   },
   "RT_VERSION": {

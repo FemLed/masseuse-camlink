@@ -232,6 +232,38 @@ func TestDetectRootIsTheWindowsInstall(t *testing.T) {
 	}
 }
 
+func TestStagedExeFollowsTheBundleAcrossTheWindow(t *testing.T) {
+	// A staged bundle from before the window: the connector is the
+	// executable, under the running program's name.
+	old := filepath.Join(t.TempDir(), "Masseuse.app")
+	if err := os.MkdirAll(filepath.Join(old, "Contents", "MacOS"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(filepath.Join(old, "Contents", "MacOS", "Masseuse"), []byte("x"), 0o755)
+	// A staged bundle with the window: the connector beside it.
+	newer := filepath.Join(t.TempDir(), "Masseuse.app")
+	if err := os.MkdirAll(filepath.Join(newer, "Contents", "MacOS"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(filepath.Join(newer, "Contents", "MacOS", "Masseuse"), []byte("w"), 0o755)
+	_ = os.WriteFile(filepath.Join(newer, "Contents", "MacOS", "masseuse-camlink"), []byte("c"), 0o755)
+	// Running as the connector beside the window: the new bundle's
+	// connector is checked; an older bundle's executable stands in.
+	in := Install{Exe: "/Applications/Masseuse.app/Contents/MacOS/masseuse-camlink", Layout: LayoutBundle, GOOS: "darwin", GOARCH: "arm64"}
+	if got := (&Installer{Install: in}).stagedExe(newer); got != filepath.Join(newer, "Contents", "MacOS", "masseuse-camlink") {
+		t.Fatalf("new from new: %s", got)
+	}
+	if got := (&Installer{Install: in}).stagedExe(old); got != filepath.Join(old, "Contents", "MacOS", "Masseuse") {
+		t.Fatalf("old from new: %s", got)
+	}
+	// Running as the bundle's executable before the window: the new
+	// bundle's executable, the window, is what is checked.
+	in.Exe = "/Applications/Masseuse.app/Contents/MacOS/Masseuse"
+	if got := (&Installer{Install: in}).stagedExe(newer); got != filepath.Join(newer, "Contents", "MacOS", "Masseuse") {
+		t.Fatalf("new from old: %s", got)
+	}
+}
+
 func TestRestartAnswersTheShellOnEverySystem(t *testing.T) {
 	// The desktop window starts the connector with RelaunchEnv set and
 	// starts the new version itself on RelaunchExitCode: Restart must not

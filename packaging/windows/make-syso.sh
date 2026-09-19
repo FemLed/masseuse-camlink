@@ -13,7 +13,8 @@
 # The desktop window (desktop/) gets its own, desktop/rsrc_windows_amd64.syso,
 # from desktop/winres.json: the same icon and strings, and the application
 # manifest the window toolkit wants (per-monitor DPI awareness, common
-# controls v6; desktop/build/windows/wails.exe.manifest).
+# controls v6; desktop/masseuse.exe.manifest, kept byte for byte by
+# .gitattributes so the object is the same from every checkout).
 #
 # usage: sh packaging/windows/make-syso.sh     (then commit the .syso files)
 # needs: go; go-winres is fetched at the pinned version below and run with
