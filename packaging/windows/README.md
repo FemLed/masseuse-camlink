@@ -142,7 +142,7 @@ Signing's is.
 | `verinfo/` | `go run ./packaging/windows/verinfo PROGRAM.exe` prints the strings Explorer's Details tab shows, read with the same Win32 calls Explorer uses; the workflows check the built connector with it. PowerShell's `(Get-Item x.exe).VersionInfo` is not used: .NET reports every string empty when the table has no `FileVersion` string, and this resource has none on purpose |
 | `README.txt` | goes into the payload as is (with Windows line endings), unpacked beside ffmpeg |
 | `pack/` | `go run ./packaging/windows/pack -v VERSION -s SHELL -b CONNECTOR -f FFMPEG_DIR [-u UNITS_DIR] -o OUT.exe` appends the payload (the connector first) to the window and checks the result: the payload located and verified in the file written, and `internal/payload.Strip` giving the window back. Plain Go, so it runs on the Windows release runner and the Linux CI runner alike; nothing is signed here |
-| `../../desktop/winres.json` | the window's resources: the same icon and strings, plus the application manifest the window toolkit wants (`desktop/masseuse.exe.manifest`: per-monitor DPI awareness, common controls v6, a four-part version of its own as Windows requires); `make-syso.sh` makes `desktop/rsrc_windows_amd64.syso` from it |
+| `../../desktop/winres.json` | the window's resources: the same icon and strings, plus the application manifest the window toolkit wants (per-monitor DPI awareness, common controls v6), written by go-winres from the fields there; `make-syso.sh` makes `desktop/rsrc_windows_amd64.syso` from it |
 
 ## How the release builds it
 
