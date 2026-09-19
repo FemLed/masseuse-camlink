@@ -174,13 +174,21 @@ The bindings are generated as TypeScript with interfaces
    and `update.DetectRoot` make the shell's install the one an update
    replaces, and `Restart` answers the shell on every system. Tested
    against pipes (`ipc_test.go`), the built program included.
-3. **The link**: `ConnectorService.ServiceStartup` starts the connector next
-   to the shell (`Contents/MacOS/masseuse-camlink -ipc -state-dir …`,
-   `masseuse-camlink.exe` beside `Masseuse.exe`), relays its lines,
-   `ServiceShutdown` sends `quit`, closes its input and waits a bounded few
-   seconds; `ShouldQuit` asks through a native dialog while a session has
-   the camera or the unit is armed; the page swaps the mock for the Wails
-   bridge; the `connector` event is registered so its type is generated.
+3. **The link** (done): `ConnectorService.ServiceStartup` starts the
+   connector found beside the shell (`desktop/locate.go`) with `-ipc
+   -state-dir … -install-root …` and `MASSEUSE_CAMLINK_RELAUNCH=1`, relays
+   its lines as the `connector` event, keeps the last of each kind for a
+   page that mounts late (`Snapshot`), writes the page's requests to its
+   standard input, and on `ServiceShutdown` sends `quit`, closes its input
+   and waits a bounded few seconds; `ShouldQuit` refuses and asks through
+   a native dialog while a session has the camera or the unit is armed;
+   exit code 75 quits the window and starts the program again
+   (`relaunch.go`); any other end is a `blocked connector-stopped` the page
+   can start again from (`Restart`). The page swaps the mock for the Wails
+   bridge (`frontend/src/bridge/wails`), `?mock=1` keeping the mock inside
+   the window. On Windows the shell unpacks its own payload, the connector
+   among its files (`internal/payload.UnpackUnder`). Tested against a fake
+   connector (`desktop/connector_test.go`) and run around the real one.
 4. **Packaging and release**: `Masseuse.app` with the shell as its
    executable and the connector, ffmpeg and `Helpers/units` inside
    (`packaging/macos`, `LSUIElement` gone, the usage strings already there);

@@ -192,3 +192,63 @@ jobs:
         with:
           go-version-file: go.mod
           go-package: ./...
+
+  desktop:
+    # The desktop shell (desktop/, docs/DESKTOP.md): its own Go module, so
+    # the connector's `go vet ./...` above never sees it. The page must
+    # typecheck and build, the Go shell must vet, build and pass its tests
+    # on each of the three systems it ships for (cgo: the window toolkit is
+    # native), and the generated bindings committed under frontend/bindings
+    # must be what the Go services say.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, windows-2022, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: desktop/go.mod
+          cache: true
+          cache-dependency-path: |
+            desktop/go.sum
+            go.sum
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/frontend/package-lock.json
+      - name: Linux toolkit
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev pkg-config
+      - name: frontend
+        working-directory: desktop/frontend
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+      - name: bindings are current
+        if: runner.os == 'macOS'
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.23
+          wails3 generate bindings -ts -i
+          git diff --exit-code -- frontend/bindings
+      - name: go vet, build and test
+        run: |
+          # gofmt on the two systems whose checkout keeps LF (Git on the
+          # Windows runner writes CRLF, which gofmt reports on every file).
+          if [ "$RUNNER_OS" != Windows ]; then gofmt -l . && test -z "$(gofmt -l .)"; fi
+          go vet ./...
+          go build -trimpath -buildvcs=false -o /dev/null .
+          # The race detector needs a C toolchain the Windows runner does
+          # not pair with this build; the other two run under it.
+          if [ "$RUNNER_OS" = Windows ]; then go test -count=1 ./...; else go test -count=1 -race ./...; fi
