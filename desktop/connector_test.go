@@ -12,6 +12,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/FemLed/masseuse-camlink/internal/payload"
+	"github.com/FemLed/masseuse-camlink/internal/pesig/petest"
 )
 
 // The test binary doubles as a fake connector when FAKE_CONNECTOR is set:
@@ -195,6 +198,69 @@ func TestLocateConnectorHonoursTheEnvironment(t *testing.T) {
 	t.Setenv("MASSEUSE_CAMLINK_BIN", filepath.Join(t.TempDir(), "gone"))
 	if _, _, err := locateConnector(t.TempDir(), slog.New(slog.DiscardHandler)); err == nil {
 		t.Fatal("a missing connector was found")
+	}
+}
+
+func TestLocateBesideTheShell(t *testing.T) {
+	log := slog.New(slog.DiscardHandler)
+	// The Linux desktop archive: the connector in the shell's directory,
+	// which is what an update replaces.
+	dir := t.TempDir()
+	shell := filepath.Join(dir, "Masseuse")
+	connector := filepath.Join(dir, "masseuse-camlink")
+	for _, f := range []string{shell, connector} {
+		if err := os.WriteFile(f, []byte("x"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bin, root, err := locateBeside(shell, t.TempDir(), "linux", log)
+	if err != nil || bin != connector || root != dir {
+		t.Fatalf("linux: %s %s %v", bin, root, err)
+	}
+	// The macOS bundle: the root is the .app.
+	app := filepath.Join(t.TempDir(), "Masseuse.app")
+	macos := filepath.Join(app, "Contents", "MacOS")
+	if err := os.MkdirAll(macos, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(macos, "masseuse-camlink"), []byte("x"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	bin, root, err = locateBeside(filepath.Join(macos, "Masseuse"), t.TempDir(), "darwin", log)
+	if err != nil || bin != filepath.Join(macos, "masseuse-camlink") || root != app {
+		t.Fatalf("darwin: %s %s %v", bin, root, err)
+	}
+	// Nothing beside the shell: said, with the way out.
+	if _, _, err := locateBeside(filepath.Join(t.TempDir(), "Masseuse"), t.TempDir(), "linux", log); err == nil || !strings.Contains(err.Error(), "MASSEUSE_CAMLINK_BIN") {
+		t.Fatalf("missing connector: %v", err)
+	}
+	// The Windows package: the shell carries the connector in its payload,
+	// unpacked under the state directory; the root is the shell's own file.
+	packed, err := payload.Append(petest.Image([]byte("window")), "0.0.0", []payload.Entry{
+		{Name: "masseuse-camlink.exe", Data: petest.Image([]byte("connector"))},
+		{Name: "ffmpeg.exe", Data: petest.Image([]byte("ffmpeg"))},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := filepath.Join(t.TempDir(), "Masseuse.exe")
+	if err := os.WriteFile(pkg, packed, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stateDir := t.TempDir()
+	bin, root, err = locateBeside(pkg, stateDir, "windows", log)
+	if err != nil || root != pkg || filepath.Base(bin) != "masseuse-camlink.exe" || !strings.HasPrefix(bin, filepath.Join(stateDir, "bin")) {
+		t.Fatalf("windows: %s %s %v", bin, root, err)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(bin), "ffmpeg.exe")); err != nil {
+		t.Fatalf("ffmpeg.exe is not beside the connector: %v", err)
+	}
+	// A package that carries no connector is refused.
+	bare, _ := payload.Append(petest.Image([]byte("window")), "0.0.0", []payload.Entry{{Name: "ffmpeg.exe", Data: petest.Image([]byte("ffmpeg"))}})
+	pkg2 := filepath.Join(t.TempDir(), "Masseuse.exe")
+	_ = os.WriteFile(pkg2, bare, 0o755)
+	if _, _, err := locateBeside(pkg2, t.TempDir(), "windows", log); err == nil {
+		t.Fatal("a package without a connector was taken")
 	}
 }
 

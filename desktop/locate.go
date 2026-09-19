@@ -44,9 +44,14 @@ func locateConnector(stateDir string, log *slog.Logger) (bin, root string, err e
 	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
 		exe = resolved
 	}
+	return locateBeside(exe, stateDir, runtime.GOOS, log)
+}
+
+// locateBeside is locateConnector for the shell at exe on goos.
+func locateBeside(exe, stateDir, goos string, log *slog.Logger) (bin, root string, err error) {
 	dir := filepath.Dir(exe)
 	name := connectorName
-	if runtime.GOOS == "windows" {
+	if goos == "windows" {
 		name += ".exe"
 		unpacked, err := payload.UnpackUnder(exe, stateDir, log)
 		if err != nil {
@@ -67,7 +72,7 @@ func locateConnector(stateDir string, log *slog.Logger) (bin, root string, err e
 		}
 		return "", "", err
 	}
-	if runtime.GOOS == "darwin" && filepath.Base(dir) == "MacOS" && filepath.Base(filepath.Dir(dir)) == "Contents" &&
+	if goos == "darwin" && filepath.Base(dir) == "MacOS" && filepath.Base(filepath.Dir(dir)) == "Contents" &&
 		strings.HasSuffix(filepath.Dir(filepath.Dir(dir)), ".app") {
 		return bin, filepath.Dir(filepath.Dir(dir)), nil
 	}
