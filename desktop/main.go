@@ -78,6 +78,19 @@ func main() {
 			},
 		},
 		ShouldQuit: connector.shouldQuit,
+		// The last thing before the process ends, after the services are
+		// down (the connector with them) and the single-instance lock is
+		// released: when the connector ended with the relaunch code, an
+		// update is in place and the new version is started from the same
+		// place (relaunch.go). Run() does not return on every platform
+		// (AppKit ends the process on quit), so this is the one place.
+		PostShutdown: func() {
+			if connector.shouldRelaunch() {
+				if err := relaunchProgram(os.Args[1:]); err != nil {
+					log.Printf("could not start the new version: %v", err)
+				}
+			}
+		},
 	})
 	connector.app = app
 	app.Menu.Set(buildMenu(app, connector))
@@ -108,13 +121,6 @@ func main() {
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
-	}
-	// The connector ended with the relaunch code: an update is in place,
-	// and the new version starts once this process has gone (relaunch.go).
-	if connector.shouldRelaunch() {
-		if err := relaunchProgram(os.Args[1:]); err != nil {
-			log.Printf("could not start the new version: %v", err)
-		}
 	}
 }
 

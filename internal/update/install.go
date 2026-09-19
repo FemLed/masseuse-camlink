@@ -109,11 +109,21 @@ func (i *Installer) Stage(ctx context.Context, s *Staged, dir string) (string, e
 	return root, nil
 }
 
-// stagedExe is the new program inside a staged root.
+// stagedExe is the new program inside a staged root: for a bundle, the
+// program under the running one's name, or the connector by its own name
+// when the bundle's executable changed hands (the desktop window became
+// the bundle's executable and the connector moved beside it; either
+// answers --version with the tag).
 func (i *Installer) stagedExe(root string) string {
 	switch i.Install.Layout {
 	case LayoutBundle:
-		return filepath.Join(root, "Contents", "MacOS", filepath.Base(i.Install.Exe))
+		macos := filepath.Join(root, "Contents", "MacOS")
+		for _, name := range []string{filepath.Base(i.Install.Exe), "masseuse-camlink", "Masseuse"} {
+			if _, err := os.Stat(filepath.Join(macos, name)); err == nil {
+				return filepath.Join(macos, name)
+			}
+		}
+		return filepath.Join(macos, filepath.Base(i.Install.Exe))
 	case LayoutPackage:
 		return filepath.Join(root, PackageExe)
 	}

@@ -189,15 +189,23 @@ The bindings are generated as TypeScript with interfaces
    the window. On Windows the shell unpacks its own payload, the connector
    among its files (`internal/payload.UnpackUnder`). Tested against a fake
    connector (`desktop/connector_test.go`) and run around the real one.
-4. **Packaging and release**: `Masseuse.app` with the shell as its
-   executable and the connector, ffmpeg and `Helpers/units` inside
-   (`packaging/macos`, `LSUIElement` gone, the usage strings already there);
-   `Masseuse.exe` as the shell with the connector added to the payload
-   (`packaging/windows/pack`); the Linux archive with both binaries. The
-   shell is built per platform (`macos-26`, `windows-2022`, Ubuntu with GTK4
-   and WebKitGTK 6.0), signed as the app is today; the connector stays the
-   goreleaser build. VERIFY.md gains a section on the shell; README's
-   Install is rewritten; `-console` stays for people who want the terminal.
+4. **Packaging and release** (done): `Masseuse.app` with the shell as its
+   executable and the connector at `Contents/MacOS/masseuse-camlink`
+   (signed as `ai.masseuse.camlink.connector`), ffmpeg and
+   `Helpers/units` inside (`packaging/macos`, `LSUIElement` gone, the
+   usage strings in the application's name); `Masseuse.exe` as the shell
+   (GUI subsystem, `desktop/rsrc_windows_amd64.syso`) with the connector
+   added to the payload (`packaging/windows/pack -s`); the Linux desktop
+   archive `Masseuse.ai-<version>-linux-amd64.tar.gz` with both binaries,
+   `units/`, a desktop entry and its installer (`packaging/linux`). The
+   shell is built per platform in the release (`macos-26` universal,
+   `windows-2022`, `ubuntu-24.04` with GTK 4 and WebKitGTK 6.0), the
+   connector stays the goreleaser build and is compared byte for byte
+   inside every download; `checksums-linux.txt` and `linux.intoto.jsonl`
+   join the others, and `update-check-*` run the connector from inside
+   each download with `-install-root`. VERIFY.md gained "The desktop
+   window" and "The Linux desktop archive"; README's Install is the
+   window's.
 
 ### The face view and OBS
 
@@ -223,7 +231,32 @@ units that work uses the makers' names as the phone app has them, `Mastogo`
 among them, as the unit advertises itself. Both stand; the list is the
 brand's, the labels are the connector's.
 
-## 5. Open questions
+## 5. Before a tag
+
+The release jobs check what a machine can check. On each system, by hand,
+with the assembled download (the unsigned CI artifacts do for all but the
+Gatekeeper and SmartScreen prompts):
+
+- Open the download: the window comes up with a pairing code; the
+  application menu (or the window's menu bar) shows the connector's
+  version and the update line; Help opens the pages; About opens.
+- Pair a phone, pick a camera and microphone, pick the phone's camera or
+  OBS Studio for the face view, pick a unit; the phone sees the choices
+  (the source report). The ready screen shows the link active during a
+  session.
+- Quit during a session: the question appears; *Keep running* keeps it;
+  *Quit* ends the session, the camera goes off, the unit is released, and
+  no `masseuse-camlink` process is left (`pgrep`, Task Manager).
+- Kill the window (`kill -9`, End task): the connector ends with it
+  (standard input closed).
+- An update: run the download with `MASSEUSE_CAMLINK_UPDATE_AS=v0.10.0`
+  in the environment; within a minute the window closes and the new
+  version's opens, with the same pairing, `Updated to vX.Y.Z` in the menu;
+  the previous install is under `previous/` (Mac) or `.previous/`.
+- The log (Help, "Show the log") holds the connector's lines and the
+  shell's.
+
+## 6. Open questions
 
 - A local preview of the chosen camera in the picker. It would help with a
   virtual camera (is OBS outputting?) but sits oddly beside "the camera is on
