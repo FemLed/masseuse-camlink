@@ -251,6 +251,35 @@ export function useDispatch(): Dispatch<Action> {
     return useStore().dispatch;
 }
 
+/**
+ * Asks the connector for the cameras and microphones it can open; the
+ * answer arrives as a `devices` event. The connector lists them only when
+ * asked (cmd/masseuse-camlink/ipc.go, list_devices), so this asks once the
+ * connector has said hello, and, while `live` and the window is visible,
+ * every few seconds, so a camera plugged in or a virtual camera started
+ * appears on its own. Nothing is asked while the connector is stopped, and
+ * a refusal is not a notice: the list simply stays as it was.
+ */
+export function useDeviceListing(live: boolean, intervalMs = 5000): void {
+    const { state, bridge } = useStore();
+    const { hello, blocked } = state;
+    useEffect(() => {
+        if (!hello || blocked) return;
+        const ask = () => {
+            if (document.visibilityState !== 'visible') return;
+            bridge.send({ type: 'list_devices' }).catch(() => {});
+        };
+        ask();
+        if (!live) return;
+        const timer = setInterval(ask, intervalMs);
+        document.addEventListener('visibilitychange', ask);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', ask);
+        };
+    }, [hello, blocked, live, bridge, intervalMs]);
+}
+
 /** The connector, to ask things of; a refusal becomes a notice. */
 export function useBridge() {
     const { bridge, dispatch } = useStore();

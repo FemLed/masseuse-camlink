@@ -4,19 +4,24 @@
 // let go of and the new one connected; an update check runs and reports).
 // The page cannot tell it from the connector, which is the point.
 
-import type { Bridge, ConnectorCommand, ConnectorEvent, Descriptor, Device, FaceCamera, Share, Unit } from '../types';
+import type { Bridge, ConnectorCommand, ConnectorEvent, Descriptor, FaceCamera, Share, Unit } from '../types';
 import { SHARE_ADDRESS, descriptorFor, disconnected, shareOffered } from './fixtures';
 import type { Scenario } from './scenarios';
 
 type Handler = (event: ConnectorEvent) => void;
+type DevicesEvent = Extract<ConnectorEvent, { type: 'devices' }>;
 
 export class MockBridge implements Bridge {
     private handlers = new Set<Handler>();
     private timers: ReturnType<typeof setTimeout>[] = [];
     private started = false;
 
-    // What was last said, so a command can answer in the same terms.
-    private devices: { cameras: Device[]; mics: Device[] } = { cameras: [], mics: [] };
+    // What was last said, so a command can answer in the same terms. The
+    // devices are the last `devices` event whole (stand-ins and a listing
+    // error included): the page asks for them once the hello has arrived
+    // and again while the Cameras screen is open, and the answer must say
+    // what the scenario says, as it stands when the answer goes out.
+    private devices: DevicesEvent = { type: 'devices', cameras: [], mics: [], substitutions: [] };
     private units: Unit[] = [];
     private unit: Descriptor | null = null;
     private connectorVersion = 'v0.13.0';
@@ -49,7 +54,7 @@ export class MockBridge implements Bridge {
                 this.connectorVersion = event.hello.version;
                 break;
             case 'devices':
-                if (!event.error) this.devices = { cameras: event.cameras, mics: event.mics };
+                this.devices = event;
                 break;
             case 'units':
                 this.units = event.units;
@@ -76,7 +81,10 @@ export class MockBridge implements Bridge {
     async send(command: ConnectorCommand): Promise<void> {
         switch (command.type) {
             case 'list_devices':
-                this.later(400, { type: 'devices', cameras: this.devices.cameras, mics: this.devices.mics, substitutions: [] });
+                // Read when the answer goes out, not when it is asked: the
+                // first request follows the hello at once, before the
+                // scenario has listed anything.
+                this.later(400, () => this.devices);
                 return;
 
             case 'set_source': {
