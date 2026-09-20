@@ -1,5 +1,5 @@
-// Pair: the code the phone needs, shown large, with what to do with it, and
-// under the heading why the person is pairing at all (ui/Punchline.tsx). The
+// Pair: the code the phone needs, shown large, with what to do with it (why
+// the person is pairing at all stands under the wordmark, ui/TopBar.tsx). The
 // service sends a code with hello and a new one when it lapses; how much
 // life the code has left is the ring under it, as an authenticator app
 // draws it, with the time left in words beside it ("Code rotates in 9
@@ -16,7 +16,6 @@ import { useAppState, useDispatch } from '../bridge/store';
 import { Card, CardLabel } from '../ui/Card';
 import { CodeCells } from '../ui/CodeCells';
 import { CodeTimer, countdownText, useCountdown } from '../ui/CodeTimer';
-import { Punchline } from '../ui/Punchline';
 import { Scene } from '../ui/Scene';
 
 // The three things to do on the phone, one line each.
@@ -55,14 +54,12 @@ export function Pair() {
                 ) : (
                     <>
                         <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-bone">{another ? 'Pair another phone' : 'Type this code into your phone'}</h1>
-                        {/* Why pair at all: the tagline and the figures, as under the Cameras heading. */}
-                        <Punchline className="mt-2" />
-                        <p className="mt-2 max-w-[52ch] text-[13px] leading-snug text-bone/70">
+                        <p className="mt-2 max-w-[46ch] text-[15px] leading-snug text-bone/75">
                             {another
                                 ? `${phones} phone${phones === 1 ? ' is' : 's are'} paired with this computer. A phone that types this code joins them.`
                                 : 'The code securely connects your masseuse to this computer.'}
                         </p>
-                        <div className="mt-5">
+                        <div className="mt-7">
                             <CodeCells code={shown} ending={Boolean(shown && countdown?.ending)} />
                         </div>
                         {/* Under the code, flush with its left edge: the ring and the time left while there is a code, a word while there is not. */}

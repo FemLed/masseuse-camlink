@@ -26,7 +26,6 @@ import { faceViewOf, useAppState, useBridge, useDeviceListing, useDispatch, type
 import type { SourceChoice } from '../bridge/types';
 import { Card, CardLabel, Well } from '../ui/Card';
 import { DeviceCard, MissingDeviceCard, NoMicCard, isVirtualCamera, natureOf } from '../ui/DeviceCard';
-import { Punchline } from '../ui/Punchline';
 import { FaceView } from './FaceView';
 
 /** The camera list's value for a camera on the network. */
@@ -139,19 +138,11 @@ export function Camera() {
             <div className="flex items-end justify-between gap-6">
                 <div className="min-w-0">
                     <h1 className="text-[24px] leading-tight font-semibold tracking-tight text-bone">Cameras and microphone</h1>
-                    {tab === 'behind' ? (
-                        <div className="mt-1.5">
-                            <Punchline />
-                            <p className="mt-2 max-w-[66ch] text-[13px] leading-snug text-bone/70">
-                                A camera behind you lets your masseuse monitor your shoulders, hands, back, buttocks, legs, and feet. Your face alone represents 240+ of the data points monitored throughout your
-                                electrostimulation session.
-                            </p>
-                        </div>
-                    ) : (
-                        <p className="mt-1 max-w-[72ch] text-[14px] leading-snug text-bone/75">
-                            Which video shows your face: your phone’s own camera, as captured, or use OBS Studio with additional filters and/or a dedicated front-facing camera.
-                        </p>
-                    )}
+                    <p className="mt-1 max-w-[72ch] text-[14px] leading-snug text-bone/75">
+                        {tab === 'behind'
+                            ? 'A camera behind you lets your masseuse monitor your shoulders, hands, back, buttocks, legs, and feet. Your face alone represents 240+ of the data points monitored throughout your electrostimulation session.'
+                            : 'Which video shows your face: your phone’s own camera, as captured, or use OBS Studio with additional filters and/or a dedicated front-facing camera.'}
+                    </p>
                 </div>
                 <Tabs value={tab} onValueChange={(v) => setTab(v as 'behind' | 'face')}>
                     <TabsList>

@@ -35,7 +35,7 @@ export function StepBar() {
     };
 
     return (
-        <nav aria-label="Setup steps" className="flex shrink-0 items-center gap-1 px-6 pt-1 pb-2">
+        <nav aria-label="Setup steps" className="flex shrink-0 items-center gap-1 px-6 pt-1 pb-1">
             {STEPS.map((step, i) => {
                 const isCurrent = step.id === state.step;
                 const isDone = done(step.id, i);
