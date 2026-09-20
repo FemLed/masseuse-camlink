@@ -26,20 +26,11 @@ import { faceViewOf, useAppState, useBridge, useDeviceListing, useDispatch, type
 import type { SourceChoice } from '../bridge/types';
 import { Card, CardLabel, Well } from '../ui/Card';
 import { DeviceCard, MissingDeviceCard, NoMicCard, isVirtualCamera, natureOf } from '../ui/DeviceCard';
+import { Punchline } from '../ui/Punchline';
 import { FaceView } from './FaceView';
 
 /** The camera list's value for a camera on the network. */
 const NETWORK = 'network';
-
-/** One figure of the screen's punchline: the number in rose, as the steps' numerals are, its words small beside it. */
-function Figure({ value, label }: { value: string; label: string }) {
-    return (
-        <span className="inline-flex items-baseline gap-1.5">
-            <span className="text-[26px] leading-none font-semibold tracking-tight text-rose tabular-nums">{value}</span>
-            <span className="text-[12px] leading-none text-bone-dim">{label}</span>
-        </span>
-    );
-}
 
 /** The shape of a device card while the connector is still listing, with a word on what is being looked for. */
 function DeviceSkeleton({ children }: { children: string }) {
@@ -150,17 +141,7 @@ export function Camera() {
                     <h1 className="text-[24px] leading-tight font-semibold tracking-tight text-bone">Cameras and microphone</h1>
                     {tab === 'behind' ? (
                         <div className="mt-1.5">
-                            {/* The tagline, in the brand's voice (index.css, --font-brand). */}
-                            <p className="font-brand text-[19px] leading-snug text-bone italic">See how your full body responds to electrostimulation.</p>
-                            {/* The differentiator as figures; read aloud as the sentence they stand for. */}
-                            <p className="mt-2">
-                                <span className="sr-only">Over 300 data points analyzed 10 times a second.</span>
-                                <span aria-hidden className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                                    <Figure value="300+" label="data points" />
-                                    <span className="text-[12px] leading-none text-bone-dim">analyzed</span>
-                                    <Figure value="10×" label="a second" />
-                                </span>
-                            </p>
+                            <Punchline />
                             <p className="mt-2 max-w-[66ch] text-[13px] leading-snug text-bone/70">
                                 A camera behind you lets your masseuse monitor your shoulders, hands, back, buttocks, legs, and feet. Your face alone represents 240+ of the data points monitored throughout your
                                 electrostimulation session.
