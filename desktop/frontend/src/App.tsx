@@ -7,7 +7,7 @@
 import { useEffect } from 'react';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { screenOf, useAppState, useBridge, useDispatch } from './bridge/store';
+import { screenOf, useAppState, useBridge, useDeviceListing, useDispatch } from './bridge/store';
 import { About } from './screens/About';
 import { Blocked } from './screens/Blocked';
 import { Camera } from './screens/Camera';
@@ -40,6 +40,10 @@ export function App() {
     const dispatch = useDispatch();
     const bridge = useBridge();
     const screen = screenOf(state);
+
+    // The first device listing, once the connector is up, so the Cameras
+    // screen has it when it opens; that screen keeps it current itself.
+    useDeviceListing(false);
 
     useEffect(
         () =>

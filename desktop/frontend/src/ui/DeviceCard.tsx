@@ -12,12 +12,17 @@ import type { Device } from '../bridge/types';
 
 export type DeviceNature = 'built-in' | 'usb' | 'virtual' | 'continuity';
 
-/** What a device is, by its name; what the listing calls it is all there is. */
+/**
+ * What a device is, by its name; what the listing calls it is all there is.
+ * The built-in names are the Mac's (FaceTime, MacBook) and the ones Windows
+ * gives the sound chip and the camera on the board (Realtek, Microphone
+ * Array, High Definition Audio, Conexant, Intel Smart Sound, Integrated).
+ */
 export function natureOf(device: Device): DeviceNature {
     const n = device.name.toLowerCase();
     if (/(obs|virtual|camo|snap camera|manycam|ndi)/.test(n)) return 'virtual';
     if (/(iphone|ipad)/.test(n)) return 'continuity';
-    if (/(facetime|built-in|built in|macbook|internal|integrated)/.test(n)) return 'built-in';
+    if (/(facetime|built-in|built in|macbook|internal|integrated|realtek|microphone array|high definition audio|conexant|intel smart sound)/.test(n)) return 'built-in';
     return 'usb';
 }
 

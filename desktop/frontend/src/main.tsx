@@ -4,6 +4,13 @@
 // URL or the scenario panel, and `?mock=1` asks for the mock inside the
 // shell too, for demonstrations. Inside the shell the page asks it who it
 // is (version, state directory) and listens for the native menu.
+//
+// Which of the two it is must be known before the first render, and the
+// shell's runtime is injected only once the page has loaded (on Windows
+// and Linux after this module has run): the webview's own bridge object
+// says the page is inside the shell (src/shell, inShell), and the render
+// waits for the runtime's configuration (runtimeReady) so the platform and
+// the runtime's own answers are right from the first frame.
 
 import { StrictMode, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -18,7 +25,7 @@ import { WailsBridge } from './bridge/wails/WailsBridge';
 import { MenuReference } from './dev/MenuReference';
 import { ScenarioPanel } from './dev/ScenarioPanel';
 import { WindowFrame } from './dev/WindowFrame';
-import { hostPlatform, inWails } from './shell/shell';
+import { hostPlatform, inWails, runtimeReady } from './shell/shell';
 import './index.css';
 
 const DEV = import.meta.env.DEV;
@@ -92,8 +99,10 @@ function Root() {
     return inWails() ? <div className="h-full">{content}</div> : <WindowFrame platform={platform}>{content}</WindowFrame>;
 }
 
-createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-        <Root />
-    </StrictMode>,
-);
+void runtimeReady().then(() => {
+    createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+            <Root />
+        </StrictMode>,
+    );
+});
