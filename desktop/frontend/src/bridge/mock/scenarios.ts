@@ -119,8 +119,8 @@ export const scenarios: Scenario[] = [
     {
         id: 'pair-just-paired',
         group: 'Pair',
-        title: 'A phone pairs',
-        note: 'The code is typed into the phone three seconds in.',
+        title: 'A phone pairs, on to Cameras',
+        note: 'The code is typed into the phone three seconds in; the page moves on to the camera.',
         step: 'pair',
         script: [...opening(), { at: 900, event: code(9) }, { at: 3000, event: { type: 'paired', phones: 1 } }],
     },

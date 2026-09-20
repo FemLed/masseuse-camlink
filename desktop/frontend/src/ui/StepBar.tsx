@@ -45,7 +45,9 @@ export function StepBar() {
     const opened = (index: number): boolean => STEPS.slice(0, index).every((s, k) => done(s.id, k));
 
     return (
-        <nav aria-label="Setup steps" className="flex shrink-0 items-center gap-1 px-6 pt-1 pb-1">
+        // A 40-pt row on the content inset, the first pill's numeral flush with
+        // the masthead and the titles under it (the pill's own padding pulled back).
+        <nav aria-label="Setup steps" className="flex h-10 shrink-0 items-center gap-1 px-inset">
             {STEPS.map((step, i) => {
                 const isCurrent = step.id === state.step;
                 const isDone = done(step.id, i);
@@ -60,6 +62,7 @@ export function StepBar() {
                             onClick={() => dispatch({ type: 'ui/go', step: step.id })}
                             className={cn(
                                 'inline-flex h-8 items-center gap-2 rounded-full px-3 text-[13px] font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default',
+                                i === 0 && '-ml-3',
                                 isCurrent && 'bg-rose/15 text-bone ring-1 ring-rose/40',
                                 !isCurrent && isDone && 'text-bone/75 hover:text-bone',
                                 !isCurrent && !isDone && 'text-bone/40',
