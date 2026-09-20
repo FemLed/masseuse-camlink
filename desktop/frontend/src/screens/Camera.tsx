@@ -19,9 +19,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { faceViewOf, useAppState, useBridge, useDispatch, type FaceView as FaceViewChoice } from '../bridge/store';
+import { faceViewOf, useAppState, useBridge, useDeviceListing, useDispatch, type FaceView as FaceViewChoice } from '../bridge/store';
 import type { SourceChoice } from '../bridge/types';
 import { Card, CardLabel, Well } from '../ui/Card';
 import { DeviceCard, MissingDeviceCard, NoMicCard, isVirtualCamera, natureOf } from '../ui/DeviceCard';
@@ -29,6 +30,22 @@ import { FaceView } from './FaceView';
 
 /** The camera list's value for a camera on the network. */
 const NETWORK = 'network';
+
+/** The shape of a device card while the connector is still listing, with a word on what is being looked for. */
+function DeviceSkeleton({ children }: { children: string }) {
+    return (
+        <div role="status" aria-busy="true" aria-label={children}>
+            <Well className="flex items-center gap-3.5 px-4 py-2.5">
+                <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
+                <Skeleton className="h-5 w-5 shrink-0 rounded-md" />
+                <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <Skeleton className="h-3.5 w-2/3" />
+                    <span className="text-[12px] leading-snug text-bone/50">{children}</span>
+                </span>
+            </Well>
+        </div>
+    );
+}
 
 export function Camera() {
     const state = useAppState();
@@ -39,6 +56,12 @@ export function Camera() {
     const locked = camera.on || link.state === 'active';
     const tab = cameraTab;
     const setTab = (t: 'behind' | 'face') => dispatch({ type: 'ui/go', step: 'camera', tab: t });
+
+    // The lists are the connector's answer, asked for while this screen is
+    // open so a camera plugged in appears on its own; until the first answer
+    // the screen says it is looking rather than that there is nothing.
+    useDeviceListing(true);
+    const looking = devices === null && !devicesError;
 
     // Behind you.
     const [cam, setCam] = useState<string | null>(source?.kind === 'camera' ? NETWORK : (source?.camera ?? null));
@@ -157,7 +180,8 @@ export function Camera() {
                             <CardLabel icon={CameraIcon}>Camera</CardLabel>
                             <ScrollArea className="flex-1" viewportClassName="pb-0.5">
                                 <RadioGroup value={cameraChosen} onValueChange={(v) => setCam(String(v))} disabled={locked} className="gap-2">
-                                    {cameras.length === 0 && !devicesError ? (
+                                    {looking ? <DeviceSkeleton>Looking for cameras…</DeviceSkeleton> : null}
+                                    {!looking && cameras.length === 0 && !devicesError ? (
                                         <Well className="flex flex-col items-center justify-center gap-2 py-5 text-center">
                                             <CameraIcon className="lucide h-6 w-6 text-bone/40" strokeWidth={2} />
                                             <span className="text-[14px] font-semibold text-bone/80">No camera found</span>
@@ -226,6 +250,7 @@ export function Camera() {
                             ) : (
                                 <ScrollArea className="flex-1" viewportClassName="pb-0.5">
                                     <RadioGroup value={micChosen} onValueChange={(v) => setMic(String(v))} disabled={locked} className="gap-2">
+                                        {looking ? <DeviceSkeleton>Looking for microphones…</DeviceSkeleton> : null}
                                         {mics.map((d) => (
                                             <DeviceCard key={d.id} device={d} inUse={camera.on && source?.mic === d.name} disabled={locked} />
                                         ))}

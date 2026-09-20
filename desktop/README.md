@@ -30,7 +30,12 @@ is asked first. When the connector has installed an update it ends with
 exit code 75, and the shell quits and starts itself again (`relaunch.go`).
 In a browser the page runs on a mock of the connector
 (`frontend/src/bridge/mock`); `?mock=1` asks for the mock inside the window
-too.
+too. The page tells the window from a browser by the webview's own bridge
+object (`frontend/src/shell/shell.ts`, `inShell`), which is there before
+the Wails runtime is: the runtime's configuration (`window._wails.environment`,
+what `System.IsDesktop()` and the platform read) is injected only once the
+page has loaded, after the page's scripts on Windows and Linux, so the first
+render waits for it (`runtimeReady`, bounded) instead of deciding without it.
 
 ## Working on it
 
