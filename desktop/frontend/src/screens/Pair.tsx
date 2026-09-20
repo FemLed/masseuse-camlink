@@ -1,24 +1,24 @@
 // Pair: the code the phone needs, shown large, with what to do with it. The
 // service sends a code with hello and a new one when it lapses; how much
-// life the code has left is the ring beside it, as an authenticator app
-// draws it, and the code turns ember for its last stretch. A phone typing
-// it in makes the connector say so, and the setup moves on.
+// life the code has left is the ring under it, as an authenticator app
+// draws it, with the time left in words beside it ("Code rotates in 9
+// minutes and 5 seconds", counting down), and the code turns ember for its
+// last stretch. A phone typing it in makes the connector say so, and the
+// setup moves on.
 
 import { Check, LoaderCircle, Smartphone, TriangleAlert } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useAppState, useDispatch } from '../bridge/store';
 import { Card, CardLabel } from '../ui/Card';
 import { CodeCells } from '../ui/CodeCells';
-import { CodeTimer, useCountdown } from '../ui/CodeTimer';
+import { CodeTimer, countdownText, useCountdown } from '../ui/CodeTimer';
 import { Scene } from '../ui/Scene';
 
-const STEPS = [
-    { title: 'Open the masseuse.ai app on your phone', text: 'Setup asks for the code from your computer; it is also under Setup later.' },
-    { title: 'Choose “I have the code”', text: 'On the screen that names the computer.' },
-    { title: 'Type these eight letters and numbers', text: 'The dash is added for you. Codes never use 0, O, 1 or I.' },
-];
+// The three things to do on the phone, one line each.
+const STEPS = ['Open the masseuse.ai app on your phone', 'Choose “I have the code”', 'Type these eight letters and numbers'];
 
 export function Pair() {
     const { code, online, phones, pairedAt, setupDone } = useAppState();
@@ -61,8 +61,8 @@ export function Pair() {
                         <div className="mt-7">
                             <CodeCells code={shown} ending={Boolean(shown && countdown?.ending)} />
                         </div>
-                        {/* Under the code, flush with its left edge: the ring while there is a code, a word while there is not. */}
-                        <div className="mt-4 flex min-h-8 items-center gap-2 text-[13px] leading-snug text-bone/60">
+                        {/* Under the code, flush with its left edge: the ring and the time left while there is a code, a word while there is not. */}
+                        <div className="mt-4 flex min-h-8 items-center gap-2.5 text-[13px] leading-snug text-bone/60">
                             {online === false ? (
                                 <>
                                     <LoaderCircle className="lucide h-3.5 w-3.5 animate-spin text-amber" strokeWidth={2.4} />
@@ -74,7 +74,14 @@ export function Pair() {
                                     Generating a code…
                                 </>
                             ) : (
-                                <CodeTimer countdown={countdown} />
+                                <>
+                                    <CodeTimer countdown={countdown} />
+                                    {countdown ? (
+                                        <span className={cn('tabular-nums', countdown.ending && 'text-ember')} aria-hidden>
+                                            Code rotates in {countdownText(countdown.remainingMs)}
+                                        </span>
+                                    ) : null}
+                                </>
                             )}
                         </div>
                         {online === false ? (
@@ -105,12 +112,9 @@ export function Pair() {
                     <CardLabel icon={Smartphone}>On your phone</CardLabel>
                     <ol className="flex flex-col gap-3.5">
                         {STEPS.map((step, i) => (
-                            <li key={step.title} className="flex gap-3.5">
+                            <li key={step} className="flex items-center gap-3.5">
                                 <span className="w-6 shrink-0 text-[26px] leading-none font-semibold tracking-tight text-rose tabular-nums">{i + 1}</span>
-                                <span className="min-w-0 pt-0.5">
-                                    <span className="block text-[14px] leading-snug font-semibold tracking-tight text-bone">{step.title}</span>
-                                    <span className="mt-0.5 block text-[12px] leading-snug text-bone/60">{step.text}</span>
-                                </span>
+                                <span className="min-w-0 text-[14px] leading-snug font-semibold tracking-tight text-bone">{step}</span>
                             </li>
                         ))}
                     </ol>
