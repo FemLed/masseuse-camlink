@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -135,7 +136,15 @@ func (s *ConnectorService) ServiceStartup(ctx context.Context, _ application.Ser
 		return err
 	}
 	s.logFile = lf
-	s.log = slog.New(slog.NewTextHandler(io.MultiWriter(os.Stderr, lf), nil))
+	// The file first, and standard error behind a writer that never
+	// fails: a program built for the Windows GUI subsystem has no standard
+	// error when Explorer starts it (every write fails with an invalid
+	// handle), and io.MultiWriter stops at the first writer that fails,
+	// which left desktop.log without a single line of the shell's own.
+	out := io.MultiWriter(lf, failsafe{os.Stderr})
+	s.log = slog.New(slog.NewTextHandler(out, nil))
+	// main's own lines (log.Printf, log.Fatal) go the same way.
+	log.SetOutput(out)
 	s.log.Info("shell: starting", "version", shellVersion(), "os", runtime.GOOS, "stateDir", s.stateDir)
 	s.start()
 	return nil
@@ -615,6 +624,16 @@ func (t *tailBuffer) String() string {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return strings.TrimSpace(strings.Join(t.lines, "\n"))
+}
+
+// failsafe writes to w and reports every write whole, whatever w says: for
+// a standard error that may not exist (the Windows GUI subsystem), so the
+// writers after it in an io.MultiWriter still get their turn.
+type failsafe struct{ w io.Writer }
+
+func (f failsafe) Write(b []byte) (int, error) {
+	_, _ = f.w.Write(b)
+	return len(b), nil
 }
 
 // defaultStateDir is the connector's (cmd/masseuse-camlink/main.go), so the

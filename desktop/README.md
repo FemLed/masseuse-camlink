@@ -56,7 +56,12 @@ runs the window around a connector with those flags.
 
 `wails3 task common:update:build-assets` regenerates the platform assets
 under `build/` from `build/config.yml`; it also recreates `build/ios/`,
-which is removed again (the shell is desktop only).
+which is removed again (the shell is desktop only). On Windows the
+resources linked into the program (the icon, the strings Explorer shows,
+the manifest) are the committed `rsrc_windows_amd64.syso`, made by
+`packaging/windows/make-syso.sh` from `winres.json` here; `wails3 task
+build` links it as the release does and does not generate a second
+resource object (`build/windows/Taskfile.yml`).
 
 The shipped downloads are not this Taskfile's: the release assembles
 `Masseuse.app` and `Masseuse.exe` around the shell, the connector, ffmpeg and
