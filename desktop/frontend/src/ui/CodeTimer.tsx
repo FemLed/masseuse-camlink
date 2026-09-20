@@ -1,7 +1,8 @@
 // How much longer the code is good for, as the ring an authenticator app
 // draws: full when the code is new, wiped clockwise from twelve o'clock
 // over the code's life (the gap grows the way a clock's hand goes), ember
-// for the last stretch; and, for the line beside it, the time left in words
+// and still for the last stretch (the code's cells are what breathe); and,
+// for the line beside it, the time left in words
 // (countdownText: "9 minutes and 5 seconds"). The service sends the next
 // code when this one lapses.
 
@@ -91,7 +92,9 @@ export function CodeTimer({ countdown, size = 32, className }: Props) {
                 strokeLinecap="round"
                 strokeDasharray={c}
                 strokeDashoffset={c * (1 - fraction)}
-                className={cn('transition-[stroke-dashoffset,color] duration-1000 ease-linear', ending ? 'text-ember animate-pulse-soft' : 'text-rose')}
+                // Ember for the last stretch, but still: the code's cells
+                // breathe (CodeCells); a pulsing arc reads as a broken ring.
+                className={cn('transition-[stroke-dashoffset,color] duration-1000 ease-linear', ending ? 'text-ember' : 'text-rose')}
             />
         </svg>
     );

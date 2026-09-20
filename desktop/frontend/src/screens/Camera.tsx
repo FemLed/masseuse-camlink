@@ -139,9 +139,18 @@ export function Camera() {
                 <div>
                     <h1 className="text-[24px] leading-tight font-semibold tracking-tight text-bone">Cameras and microphone</h1>
                     <p className="mt-1 max-w-[72ch] text-[14px] leading-snug text-bone/75">
-                        {tab === 'behind'
-                            ? 'See how your full body responds to electrostimulation. Over 300 data points analyzed 10 times a second. A camera behind you lets your masseuse monitor your shoulders, back, buttocks, legs, and feet. Your face alone represents 270+ data points that your AI masseuse monitors throughout your electrostimulation session.'
-                            : 'Which video shows your face: your phone’s own camera, as captured, or use OBS Studio with additional filters and/or a dedicated front-facing camera.'}
+                        {tab === 'behind' ? (
+                            <>
+                                <span className="block">See how your full body responds to electrostimulation.</span>
+                                <span className="block">Over 300 data points analyzed 10 times a second.</span>
+                                <span className="mt-1 block">
+                                    A camera behind you lets your masseuse monitor your shoulders, hands, back, buttocks, legs, and feet. Your face alone represents 240+ data points that are monitored throughout your
+                                    electrostimulation session.
+                                </span>
+                            </>
+                        ) : (
+                            'Which video shows your face: your phone’s own camera, as captured, or use OBS Studio with additional filters and/or a dedicated front-facing camera.'
+                        )}
                     </p>
                 </div>
                 <Tabs value={tab} onValueChange={(v) => setTab(v as 'behind' | 'face')}>
