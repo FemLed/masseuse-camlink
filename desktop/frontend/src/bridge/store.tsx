@@ -4,7 +4,7 @@
 // through useBridge; nothing here knows whether the events came from the
 // connector or from the mock.
 
-import { createContext, useContext, useEffect, useMemo, useReducer, type Dispatch, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef, type Dispatch, type ReactNode, type RefObject } from 'react';
 
 import { CODE_TTL_MS, type Bridge, type CameraStats, type ConnectorEvent, type Descriptor, type Device, type EnclaveProof, type FaceCamera, type Hello, type LinkState, type Share, type Substitution, type Unit, type UpdateState } from './types';
 
@@ -212,7 +212,12 @@ interface StoreValue {
     state: AppState;
     dispatch: Dispatch<Action>;
     bridge: Bridge;
+    /** When a device listing was asked for and not yet answered (ms since the epoch), 0 when none is outstanding. */
+    listingAsked: RefObject<number>;
 }
+
+/** How long an unanswered listing blocks the next ask: past this the connector is asked again. */
+const LISTING_TIMEOUT_MS = 15_000;
 
 const StoreContext = createContext<StoreValue | null>(null);
 
@@ -224,16 +229,22 @@ interface ProviderProps {
 
 export function StoreProvider({ bridge, initial, children }: ProviderProps) {
     const [state, dispatch] = useReducer(reducer, initial);
+    const listingAsked = useRef(0);
 
     // A new bridge (the scenario panel swapping scenarios) starts the state
     // over; the reducer's initial state is only read once, so it is reset
     // by hand.
     useEffect(() => {
         dispatch({ type: 'ui/reset', state: initial });
-        return bridge.subscribe((event) => dispatch({ type: 'event', event }));
+        listingAsked.current = 0;
+        return bridge.subscribe((event) => {
+            // The connector's answer to list_devices: the next ask may go.
+            if (event.type === 'devices') listingAsked.current = 0;
+            dispatch({ type: 'event', event });
+        });
     }, [bridge, initial]);
 
-    const value = useMemo(() => ({ state, dispatch, bridge }), [state, bridge]);
+    const value = useMemo(() => ({ state, dispatch, bridge, listingAsked }), [state, bridge]);
     return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 
@@ -256,18 +267,26 @@ export function useDispatch(): Dispatch<Action> {
  * answer arrives as a `devices` event. The connector lists them only when
  * asked (cmd/masseuse-camlink/ipc.go, list_devices), so this asks once the
  * connector has said hello, and, while `live` and the window is visible,
- * every few seconds, so a camera plugged in or a virtual camera started
- * appears on its own. Nothing is asked while the connector is stopped, and
- * a refusal is not a notice: the list simply stays as it was.
+ * every ten seconds, so a camera plugged in or a virtual camera started
+ * appears on its own. Each ask has the connector run ffmpeg's device
+ * enumeration, so one ask is outstanding at a time, across every caller of
+ * this hook: not until the answer has arrived (or the timeout has passed)
+ * is the connector asked again. Nothing is asked while the connector is
+ * stopped, and a refusal is not a notice: the list simply stays as it was.
  */
-export function useDeviceListing(live: boolean, intervalMs = 5000): void {
-    const { state, bridge } = useStore();
+export function useDeviceListing(live: boolean, intervalMs = 10_000): void {
+    const { state, bridge, listingAsked } = useStore();
     const { hello, blocked } = state;
     useEffect(() => {
         if (!hello || blocked) return;
         const ask = () => {
             if (document.visibilityState !== 'visible') return;
-            bridge.send({ type: 'list_devices' }).catch(() => {});
+            const now = Date.now();
+            if (listingAsked.current && now - listingAsked.current < LISTING_TIMEOUT_MS) return;
+            listingAsked.current = now;
+            bridge.send({ type: 'list_devices' }).catch(() => {
+                listingAsked.current = 0;
+            });
         };
         ask();
         if (!live) return;
@@ -277,7 +296,7 @@ export function useDeviceListing(live: boolean, intervalMs = 5000): void {
             clearInterval(timer);
             document.removeEventListener('visibilitychange', ask);
         };
-    }, [hello, blocked, live, bridge, intervalMs]);
+    }, [hello, blocked, live, bridge, intervalMs, listingAsked]);
 }
 
 /** The connector, to ask things of; a refusal becomes a notice. */

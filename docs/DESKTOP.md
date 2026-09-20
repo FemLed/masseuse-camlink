@@ -86,7 +86,9 @@ Native, built in `desktop/menu.go`, in each platform's shape.
   **Help**.
 - Windows and Linux: **File** (Check for updates… · the same two status
   lines · Quit Masseuse.ai Ctrl+Q) · **Edit** · **Help** (… · About
-  Masseuse.ai).
+  Masseuse.ai). On Windows the title bar and the menu bar are drawn in the
+  brand's colours whatever mode Windows itself is in (`desktop/theme.go`;
+  the dropdowns stay the system's).
 - The status lines say what the connector's first lines and update lines
   say in the terminal today (`Masseuse.ai v0.13.0 · masseuse-camlink`; `Up
   to date`, `Looking for a newer release…`, `v0.13.1 downloaded and
@@ -122,7 +124,7 @@ Events, connector to shell:
 | `online` | `online` | (the log) |
 | `code` | `code`, `expiresAt` (RFC 3339, UTC) | "Pairing code: …" |
 | `paired` | `phones` | "Paired with a phone." |
-| `devices` | `cameras`, `mics` (`{kind,id,name}`), `substitutions` (`{kind,wanted,using}`), `error` when ffmpeg or the listing failed; the answer to `list_devices`, never sent unasked: the page asks once the `hello` has arrived and, while the Cameras screen is open and the window visible, every five seconds, so a camera plugged in appears on its own (`frontend/src/bridge/store.tsx`, `useDeviceListing`) | `devices` |
+| `devices` | `cameras`, `mics` (`{kind,id,name}`), `substitutions` (`{kind,wanted,using}`), `error` when ffmpeg or the listing failed; the answer to `list_devices`, never sent unasked: the page asks once the `hello` has arrived and, while the Cameras screen is open and the window visible, every ten seconds, one ask outstanding at a time (each has the connector run ffmpeg's enumeration), so a camera plugged in appears on its own (`frontend/src/bridge/store.tsx`, `useDeviceListing`) | `devices` |
 | `source` | `kind`, `label`, `ready`, `note`, `shape`, `camera`, `mic` or `url`; `share` (`{ready,address,receiving}`) when the phone's picture is asked for, absent otherwise; `face` (`{label,camera,ready,note}`), `null` for the phone's own camera; sent again whenever any of it changes, the phone's picture arriving included | "Camera: …", "Front-facing camera: …", "Your phone's picture: rtsp://…" |
 | `link` | `state` (`active`, `on-hold`, `closed`), `reason`; with `active`, `enclave` (`{image,release,commit,source,registry,signedBy,cached}`) as last verified | "Camera link active …", "Enclave image … verified" |
 | `camera` | `on`; `stats` (`{videoBps,audioBps,congested,backlogS}`) every 10 s while sending | "Camera on", "Sending …", "Connection congested …" |
