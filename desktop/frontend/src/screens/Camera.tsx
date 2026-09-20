@@ -31,6 +31,16 @@ import { FaceView } from './FaceView';
 /** The camera list's value for a camera on the network. */
 const NETWORK = 'network';
 
+/** One figure of the screen's punchline: the number in rose, as the steps' numerals are, its words small beside it. */
+function Figure({ value, label }: { value: string; label: string }) {
+    return (
+        <span className="inline-flex items-baseline gap-1.5">
+            <span className="text-[26px] leading-none font-semibold tracking-tight text-rose tabular-nums">{value}</span>
+            <span className="text-[12px] leading-none text-bone-dim">{label}</span>
+        </span>
+    );
+}
+
 /** The shape of a device card while the connector is still listing, with a word on what is being looked for. */
 function DeviceSkeleton({ children }: { children: string }) {
     return (
@@ -136,22 +146,31 @@ export function Camera() {
     return (
         <div className="screen-body flex min-h-0 flex-1 flex-col px-8 pt-1 pb-5">
             <div className="flex items-end justify-between gap-6">
-                <div>
+                <div className="min-w-0">
                     <h1 className="text-[24px] leading-tight font-semibold tracking-tight text-bone">Cameras and microphone</h1>
-                    <p className="mt-1 max-w-[72ch] text-[14px] leading-snug text-bone/75">
-                        {tab === 'behind' ? (
-                            <>
-                                <span className="block">See how your full body responds to electrostimulation.</span>
-                                <span className="block">Over 300 data points analyzed 10 times a second.</span>
-                                <span className="mt-1 block">
-                                    A camera behind you lets your masseuse monitor your shoulders, hands, back, buttocks, legs, and feet. Your face alone represents 240+ data points that are monitored throughout your
-                                    electrostimulation session.
+                    {tab === 'behind' ? (
+                        <div className="mt-1.5">
+                            {/* The tagline, in the brand's voice (index.css, --font-brand). */}
+                            <p className="font-brand text-[19px] leading-snug text-bone italic">See how your full body responds to electrostimulation.</p>
+                            {/* The differentiator as figures; read aloud as the sentence they stand for. */}
+                            <p className="mt-2">
+                                <span className="sr-only">Over 300 data points analyzed 10 times a second.</span>
+                                <span aria-hidden className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                                    <Figure value="300+" label="data points" />
+                                    <span className="text-[12px] leading-none text-bone-dim">analyzed</span>
+                                    <Figure value="10×" label="a second" />
                                 </span>
-                            </>
-                        ) : (
-                            'Which video shows your face: your phone’s own camera, as captured, or use OBS Studio with additional filters and/or a dedicated front-facing camera.'
-                        )}
-                    </p>
+                            </p>
+                            <p className="mt-2 max-w-[66ch] text-[13px] leading-snug text-bone/70">
+                                A camera behind you lets your masseuse monitor your shoulders, hands, back, buttocks, legs, and feet. Your face alone represents 240+ of the data points monitored throughout your
+                                electrostimulation session.
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="mt-1 max-w-[72ch] text-[14px] leading-snug text-bone/75">
+                            Which video shows your face: your phone’s own camera, as captured, or use OBS Studio with additional filters and/or a dedicated front-facing camera.
+                        </p>
+                    )}
                 </div>
                 <Tabs value={tab} onValueChange={(v) => setTab(v as 'behind' | 'face')}>
                     <TabsList>
