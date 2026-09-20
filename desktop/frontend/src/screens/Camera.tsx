@@ -136,11 +136,11 @@ export function Camera() {
     return (
         <div className="screen-body flex min-h-0 flex-1 flex-col px-8 pt-1 pb-5">
             <div className="flex items-end justify-between gap-6">
-                <div>
+                <div className="min-w-0">
                     <h1 className="text-[24px] leading-tight font-semibold tracking-tight text-bone">Cameras and microphone</h1>
-                    <p className="mt-1 max-w-[60ch] text-[14px] leading-snug text-bone/75">
+                    <p className="mt-1 max-w-[72ch] text-[14px] leading-snug text-bone/75">
                         {tab === 'behind'
-                            ? 'What Masseuse.ai sends from this computer, on only while a session is watching. The choice is remembered by name.'
+                            ? 'A camera behind you lets your masseuse monitor your shoulders, hands, back, buttocks, legs, and feet. Your face alone represents 240+ of the data points monitored throughout your electrostimulation session.'
                             : 'Which video shows your face: your phone’s own camera, as captured, or use OBS Studio with additional filters and/or a dedicated front-facing camera.'}
                     </p>
                 </div>
@@ -206,7 +206,7 @@ export function Camera() {
                                             <HouseWifi className="lucide h-5 w-5 shrink-0 text-bone/80" strokeWidth={2.2} />
                                             <span className="min-w-0 flex-1">
                                                 <span className="block text-[15px] font-semibold tracking-tight text-bone">A camera on your network</span>
-                                                <span className="block text-[12px] leading-snug text-bone/50">RTSPS, UniFi Protect and others; sent instead of this computer's own</span>
+                                                <span className="block text-[12px] leading-snug text-bone/50">Wyze, UniFi Protect, or another RTSPS-capable camera.</span>
                                             </span>
                                         </span>
                                         {networkChosen ? (

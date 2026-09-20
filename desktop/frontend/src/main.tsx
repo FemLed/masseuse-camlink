@@ -70,8 +70,11 @@ function Root() {
     const [params, setParams] = useState(readParams);
     const scenario = useMemo(() => findScenario(params.scenario), [params.scenario]);
     const platform: Platform = hostPlatform() ?? params.os ?? scenario.platform ?? 'darwin';
-    // The real connector inside the shell, the mock elsewhere (or on request).
-    const mock = !inWails() || params.mock;
+    // The real connector inside the shell, the mock on request, or in a
+    // development build outside the shell (the mock-ups in a browser). A
+    // production build only ever runs inside the shell, so it never
+    // chooses the mock on its own, whatever the detection says.
+    const mock = params.mock || (DEV && !inWails());
     const bridge = useMemo<Bridge>(() => (mock ? new MockBridge(scenario) : new WailsBridge()), [mock, scenario]);
     const initial = useMemo(() => (mock ? scenarioState(scenario, initialState, platform) : { ...initialState, platform }), [mock, scenario, platform]);
 

@@ -114,7 +114,10 @@ func main() {
 			Backdrop:                application.MacBackdropNormal,
 		},
 		Windows: application.WindowsWindow{
-			Theme: application.Dark,
+			// Dark, and the title bar and menu bar in the brand's colours
+			// whatever mode Windows itself is in (theme.go).
+			Theme:       application.Dark,
+			CustomTheme: windowsTheme(),
 		},
 		URL: "/",
 	})
