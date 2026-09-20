@@ -276,16 +276,14 @@ export function Unit() {
                         </Button>
                     ) : (
                         <>
+                            {/* The first run ends with a unit found; there is no skipping it
+                                (the list above says what to switch on). */}
                             <Button variant="quiet" onClick={() => dispatch({ type: 'ui/go', step: 'camera' })}>
                                 Back
                             </Button>
-                            {unit?.connected ? (
-                                <Button onClick={finish}>Done</Button>
-                            ) : (
-                                <Button variant="ghost" onClick={finish}>
-                                    I don't have one · Skip until later
-                                </Button>
-                            )}
+                            <Button onClick={finish} disabled={!unit?.connected}>
+                                Done
+                            </Button>
                         </>
                     )}
                 </div>

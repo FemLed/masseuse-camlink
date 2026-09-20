@@ -92,17 +92,20 @@ export function Pair() {
                                 <AlertDescription>Check this computer's connection. Masseuse.ai keeps trying on its own; nothing to redo.</AlertDescription>
                             </Alert>
                         ) : null}
-                        <div className="mt-8 flex items-center gap-3">
-                            {setupDone ? (
+                        {/* Nothing leads past this step before a phone has paired: a paired
+                            phone can see this computer's camera, so pairing comes first. Paired
+                            during this run and back here, the way on is the camera. */}
+                        {setupDone ? (
+                            <div className="mt-8 flex items-center gap-3">
                                 <Button variant="quiet" onClick={() => dispatch({ type: 'ui/go', step: 'home' })}>
                                     Back to Ready
                                 </Button>
-                            ) : (
-                                <Button variant="quiet" onClick={() => dispatch({ type: 'ui/go', step: 'camera' })}>
-                                    Set up the camera first
-                                </Button>
-                            )}
-                        </div>
+                            </div>
+                        ) : phones > 0 ? (
+                            <div className="mt-8 flex items-center gap-3">
+                                <Button onClick={() => dispatch({ type: 'ui/go', step: 'camera' })}>Continue to the camera and microphone</Button>
+                            </div>
+                        ) : null}
                     </>
                 )}
             </div>

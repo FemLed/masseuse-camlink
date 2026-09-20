@@ -133,6 +133,14 @@ export const scenarios: Scenario[] = [
         setupDone: true,
         script: [...opening({ phones: 2 }), { at: 900, event: code(9) }],
     },
+    {
+        id: 'launch-paired',
+        group: 'Pair',
+        title: 'Launch on a paired computer',
+        note: 'The page starts on Pair as any launch does; the hello says a phone is paired, and the window opens on Ready with every step a place to change a choice.',
+        step: 'pair',
+        script: [...opening({ phones: 1 }), { at: 900, event: code(9) }],
+    },
 
     // Camera and microphone
     {

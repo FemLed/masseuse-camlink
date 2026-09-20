@@ -10,7 +10,7 @@
 // no say in it.
 
 import { Camera as CameraIcon, ChevronRight, HouseWifi, Layers, Lock, Mic, Smartphone, TriangleAlert, Video } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -73,6 +73,11 @@ export function Camera() {
     const face: FaceViewChoice = faceChoice ?? faceViewOf(source);
     const [faceCam, setFaceCam] = useState<string | null>(source?.face?.camera ?? null);
     const [applying, setApplying] = useState(false);
+    // In the first run, "Use these and continue" moves on once the
+    // connector has answered with a camera it can serve: the report the
+    // choice was made against is remembered, and the next one decides.
+    const [continueOnAnswer, setContinueOnAnswer] = useState(false);
+    const appliedFrom = useRef(source);
 
     // The connector's current choices are the page's starting point, and
     // follow it when the connector reports a change.
@@ -88,6 +93,14 @@ export function Camera() {
         if (source.face) setFaceCam((f) => f ?? source.face!.camera);
         setApplying(false);
     }, [source]);
+
+    // The answer to a first-run apply: on to the unit with a camera the
+    // connector can serve; without one the screen stays, saying why.
+    useEffect(() => {
+        if (!continueOnAnswer || source === appliedFrom.current) return;
+        setContinueOnAnswer(false);
+        if (source?.ready) dispatch({ type: 'ui/go', step: 'unit' });
+    }, [continueOnAnswer, source, dispatch]);
 
     const cameras = devices?.cameras ?? [];
     const mics = devices?.mics ?? [];
@@ -126,9 +139,10 @@ export function Camera() {
             choice.faceCamera = face === 'phone' ? 'phone' : (faceCamChosen ?? undefined);
             choice.share = face === 'processed';
         }
+        appliedFrom.current = source;
         await bridge.send({ type: 'set_source', choice });
         setTimeout(() => setApplying(false), 1500);
-        if (!setupDone) dispatch({ type: 'ui/go', step: 'unit' });
+        if (!setupDone) setContinueOnAnswer(true);
     };
 
     const next = () => dispatch(setupDone ? { type: 'ui/go', step: 'home' } : { type: 'ui/go', step: 'unit' });
@@ -270,22 +284,21 @@ export function Camera() {
                 </div>
             )}
 
-            <div className="mt-3 flex shrink-0 items-center justify-end gap-2">
+            {/* The first run moves on only with a camera the connector can serve
+                (the step is done on the same terms); there is no skipping it. */}
+            <div className="mt-3 flex shrink-0 items-center justify-end gap-3">
+                {!setupDone && !source?.ready ? <span className="text-[12px] leading-snug text-bone/55">Connect a camera to continue.</span> : null}
                 {setupDone ? (
                     <Button variant="quiet" onClick={() => dispatch({ type: 'ui/go', step: 'home' })}>
                         Back to Ready
                     </Button>
-                ) : (
-                    <Button variant="quiet" onClick={next}>
-                        Skip until later
-                    </Button>
-                )}
+                ) : null}
                 {changed ? (
                     <Button onClick={() => void apply()} disabled={applying}>
                         {applying ? 'Applying…' : setupDone ? 'Use these' : 'Use these and continue'}
                     </Button>
                 ) : setupDone ? null : (
-                    <Button onClick={next} disabled={locked && !source?.ready}>
+                    <Button onClick={next} disabled={!source?.ready}>
                         Continue
                     </Button>
                 )}
