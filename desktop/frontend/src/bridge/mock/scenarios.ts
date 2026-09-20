@@ -192,21 +192,6 @@ export const scenarios: Scenario[] = [
         }),
     },
     {
-        id: 'camera-ffmpeg-missing',
-        group: 'Cameras and microphone',
-        title: 'ffmpeg missing (Linux archive)',
-        note: 'The bare archive needs the distribution’s ffmpeg to send the computer’s camera.',
-        platform: 'linux',
-        step: 'camera',
-        script: [
-            { at: 0, event: { type: 'hello', hello: hello({ phones: 1, stateDir: stateDirs.linux, drivers: 'Mastago (built in); no helpers in /home/you/masseuse-camlink/units.' }) } },
-            { at: 250, event: { type: 'devices', cameras: [], mics: [], substitutions: [], error: 'ffmpeg was not found on PATH. Install it: sudo apt install ffmpeg (or your distribution’s package).' } },
-            { at: 300, event: { type: 'source', kind: 'capture', label: "This computer's camera", ready: false, note: 'ffmpeg was not found on PATH', share: shareOffered, face: null } },
-            { at: 700, event: { type: 'online', online: true } },
-            { at: 1200, event: unitsEvent([]) },
-        ],
-    },
-    {
         id: 'camera-locked',
         group: 'Cameras and microphone',
         title: 'A session has the camera',
