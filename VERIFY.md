@@ -282,8 +282,34 @@ Both `spctl` verdicts are `accepted` with `source=Notarized Developer ID`;
 (identifier `ai.masseuse.camlink.connector`) and on
 `Contents/Helpers/ffmpeg` shows the same `TeamIdentifier=B8Z4RP3846` and
 `flags=0x10000(runtime)` as the bare binaries, signed by the certificate
-listed above. `scripts/verify-release.sh` runs all of this as step 8 when
-the release carries `checksums-darwin.txt`.
+listed above.
+
+The signatures also say who may open the camera and the microphone. Under
+the hardened runtime a process opens either only with the entitlements
+`com.apple.security.device.camera` and
+`com.apple.security.device.audio-input`, and macOS checks them on the
+process that opens the device (ffmpeg) and on the application it runs
+under, the bundle's executable, which the system holds responsible; a
+responsible process without them is refused without a prompt, and the
+application never appears under Privacy & Security. From v0.18.0 the
+release signs both with `packaging/macos/device.entitlements` (v0.16.0 and
+v0.17.0 signed the executable without them, and the camera stayed off); the
+connector and the unit driver helpers carry neither. Read them back (the
+dots escaped, or `plutil` takes each as a step down a key path):
+
+```sh
+for f in /Volumes/Masseuse.ai/Masseuse.app/Contents/MacOS/Masseuse \
+         /Volumes/Masseuse.ai/Masseuse.app/Contents/Helpers/ffmpeg; do
+  codesign -d --entitlements - --xml "$f" | plutil -extract 'com\.apple\.security\.device\.camera' raw -o - -
+  codesign -d --entitlements - --xml "$f" | plutil -extract 'com\.apple\.security\.device\.audio-input' raw -o - -
+done   # four lines of "true"
+codesign -d --entitlements - --xml /Volumes/Masseuse.ai/Masseuse.app/Contents/MacOS/masseuse-camlink   # no entitlements
+```
+
+`packaging/macos/assess.sh entitlements` makes the same reading, and the
+release fails without it, both on the bundle it signs and on the bundle
+after it has updated itself. `scripts/verify-release.sh` runs all of this
+as step 8 when the release carries `checksums-darwin.txt`.
 
 ### The Windows package
 

@@ -247,7 +247,14 @@ The bindings are generated as TypeScript with interfaces
    executable and the connector at `Contents/MacOS/masseuse-camlink`
    (signed as `ai.masseuse.camlink.connector`), ffmpeg and
    `Helpers/units` inside (`packaging/macos`, `LSUIElement` gone, the
-   usage strings in the application's name); `Masseuse.exe` as the shell
+   usage strings in the application's name). The shell being the
+   executable makes it the process macOS holds responsible for what its
+   children open: under the hardened runtime it needs the camera and
+   microphone entitlements itself for ffmpeg's opening them to be allowed,
+   or even asked about (`packaging/macos/device.entitlements`, on the
+   shell and on ffmpeg; v0.16.0 and v0.17.0 signed the shell without them
+   and the camera stayed off, silently; `assess.sh entitlements` now gates
+   every bundle). `Masseuse.exe` as the shell
    (GUI subsystem, `desktop/rsrc_windows_amd64.syso`) with the connector
    added to the payload (`packaging/windows/pack -s`). The shell is built
    per platform in the release (`macos-26` universal, `windows-2022`), the

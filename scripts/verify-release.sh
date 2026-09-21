@@ -14,9 +14,12 @@
 #      is checked (team id, certificate fingerprint, notarization),
 #   8. when the release carries the macOS app (checksums-darwin.txt): its
 #      checksum file's signature, the disk image's and the ffmpeg source
-#      tarballs' hashes and provenance; on a Mac, that the app's executable
-#      is the archives' binaries (signature stripped, per architecture) and
-#      Gatekeeper's own verdict on the app and the image,
+#      tarballs' hashes and provenance; on a Mac, that the app's connector
+#      is the archives' binaries (signature stripped, per architecture),
+#      that the app's executable and its ffmpeg are signed with the camera
+#      and microphone entitlements (v0.18.0 and later; without them macOS
+#      refuses the camera silently) and Gatekeeper's own verdict on the app
+#      and the image,
 #   9. when the release carries the Windows package (checksums-windows.txt):
 #      its checksum file's signature, the package's (and the older
 #      installs' zip's) hash and provenance, and, with Go, that the package
@@ -58,6 +61,16 @@ if command -v sha256sum >/dev/null 2>&1; then SHA="sha256sum"; else need shasum;
 
 base="https://github.com/$REPO/releases/download/$tag"
 fetch() { [ -s "$1" ] || curl -fsSL -o "$1" "$base/$1"; }
+
+# at_least X.Y.Z: whether the release being verified is that version or a
+# later one, for the checks that only apply from a release on.
+at_least() {
+  # shellcheck disable=SC2046
+  set -- $(printf '%s %s' "$version" "$1" | tr . ' ')
+  [ "$1" -gt "$4" ] && return 0; [ "$1" -lt "$4" ] && return 1
+  [ "$2" -gt "$5" ] && return 0; [ "$2" -lt "$5" ] && return 1
+  [ "${3%%[!0-9]*}" -ge "${6%%[!0-9]*}" ]
+}
 
 echo "==> downloading release files for $tag"
 fetch checksums.txt
@@ -249,6 +262,24 @@ if [ -s checksums-darwin.txt ] || curl -fsSL -o checksums-darwin.txt "$base/chec
       echo "$info" | grep -q 'flags=0x10000(runtime)' \
         || { echo "    $f: not signed with the hardened runtime" >&2; hdiutil detach "$mount" -quiet; exit 1; }
     done
+    # The camera and microphone entitlements, on the app's executable (the
+    # process macOS holds responsible for what ffmpeg opens) and on ffmpeg:
+    # under the hardened runtime, a responsible process without them is
+    # refused the camera without a prompt, which is how v0.16.0 and v0.17.0
+    # shipped (VERIFY.md, "The macOS app"). The dots are escaped: plutil
+    # reads an unescaped one as a step down a key path.
+    if at_least 0.18.0; then
+      exe="$app/Contents/MacOS/$(plutil -extract CFBundleExecutable raw -o - "$app/Contents/Info.plist")"
+      for f in "$exe" "$app/Contents/Helpers/ffmpeg"; do
+        for key in 'com\.apple\.security\.device\.camera' 'com\.apple\.security\.device\.audio-input'; do
+          [ "$(codesign -d --entitlements - --xml "$f" 2>/dev/null | plutil -extract "$key" raw -o - - 2>/dev/null)" = true ] \
+            || { echo "    $f: not signed with the entitlement $key" >&2; hdiutil detach "$mount" -quiet; exit 1; }
+        done
+      done
+      echo "    ok  the app's executable and its ffmpeg may open the camera and the microphone"
+    else
+      echo "    (entitlements not checked: releases before v0.18.0 signed the executable without them)"
+    fi
     assess=$(spctl --assess --type execute -vv "$app" 2>&1 || true)
     echo "$assess" | grep -q 'source=Notarized Developer ID' \
       || { echo "    the app is not accepted as notarized:"; echo "$assess" | grep -v '^origin=' | sed 's/^/      /'; hdiutil detach "$mount" -quiet; exit 1; }

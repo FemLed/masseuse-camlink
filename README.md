@@ -238,6 +238,20 @@ and back up once it has been clear for a while (see below). Leave the
 program running in the background, or set it up as a service; nothing else
 is needed.
 
+The first time a session turns the camera on, the system asks whether
+Masseuse.ai may use the camera and the microphone; allow both. If the
+camera's light never comes on and the window says the camera is on but no
+picture is being sent (after ten seconds the connector says so too, and
+why it thinks so), the system has refused it: on a Mac, System Settings ›
+Privacy & Security › Camera, and Microphone, must list Masseuse and allow
+it; on Windows, Settings › Privacy & security › Camera, *Let desktop apps
+access your camera*, must be on, and the same under Microphone. v0.16.0
+and v0.17.0 of the Mac app could not ask at all (the window was signed
+without the camera and microphone entitlements macOS requires of the
+application that runs ffmpeg, so the refusal was silent and Masseuse never
+appeared in that list); the update to the next release fixes that, and the
+question is asked at the first session after it.
+
 While it runs, the computer does not go to sleep on its own. A laptop
 left at the foot of the bed is not touched while the session's enclave
 boots, and on battery macOS and Windows would put it to sleep a few

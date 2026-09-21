@@ -417,6 +417,29 @@ export const scenarios: Scenario[] = [
         ],
     },
     {
+        id: 'home-no-picture',
+        group: 'Ready',
+        title: 'Session active, the camera delivers no picture',
+        note: 'ffmpeg runs but never publishes, as when macOS has refused the camera; the meters sit at zero with the connector’s reason, said once as a notice.',
+        step: 'home',
+        setupDone: true,
+        script: [
+            ...opening({ phones: 1 }),
+            { at: 1800, event: { type: 'link', state: 'active', enclave } },
+            { at: 2000, event: { type: 'camera', on: true } },
+            { at: 3000, event: { type: 'camera', on: true, stats: { videoBps: 0, audioBps: 0, congested: false, backlogS: 0 } } },
+            {
+                at: 4500,
+                event: {
+                    type: 'camera',
+                    on: true,
+                    stats: { videoBps: 0, audioBps: 0, congested: false, backlogS: 0, reason: 'the camera delivered no picture in 10 s; macOS may have refused it: System Settings › Privacy & Security › Camera, and Microphone, must list Masseuse and allow it' },
+                },
+            },
+            { at: 4600, event: { type: 'notice', level: 'warn', text: 'Camera on but not sending yet: the camera delivered no picture in 10 s; macOS may have refused it: System Settings › Privacy & Security › Camera, and Microphone, must list Masseuse and allow it.' } },
+        ],
+    },
+    {
         id: 'home-on-hold',
         group: 'Ready',
         title: 'Camera link on hold',
