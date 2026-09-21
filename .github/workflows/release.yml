@@ -399,7 +399,14 @@ jobs:
           # a tool might print it; the scripts themselves never do.
           MACOS_SIGN_SUBJECT: ${{ secrets.MACOS_SIGN_SUBJECT }}
         run: sh packaging/macos/sign-notarize.sh app dist/Masseuse.app
-      - name: Gatekeeper accepts the bundle
+      - name: Gatekeeper accepts the bundle, and it may open the camera
+        # assess.sh app: the notarization verdict, and the entitlements
+        # read back from the signatures: the bundle's executable (the
+        # process macOS holds responsible for what ffmpeg opens) and ffmpeg
+        # carry the camera and microphone entitlements, the connector and
+        # the helpers none (packaging/macos/sign-app.sh). A bundle whose
+        # executable lacks them is refused the camera without a prompt
+        # (v0.16.0, v0.17.0), so the release fails here instead.
         run: sh packaging/macos/assess.sh app dist/Masseuse.app
       - name: The bundle's helpers are the manifest's, and the connector finds them
         # The thin darwin helpers, fetched and checked against the manifest
@@ -506,6 +513,11 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # For packaging/macos/assess.sh alone; the application under test is
+        # the published one, below.
+        with:
+          persist-credentials: false
       - name: The published application, in an Applications folder of its own
         run: |
           version="${GITHUB_REF_NAME#v}"
@@ -543,6 +555,10 @@ jobs:
           test "$(Applications/Masseuse.app/Contents/MacOS/masseuse-camlink --version | cut -d' ' -f1)" = "${GITHUB_REF_NAME}"
           codesign --verify --deep --strict Applications/Masseuse.app
           spctl --assess --type execute -vv Applications/Masseuse.app 2>&1 | grep -q accepted
+          # The installed copy is what macOS reads when ffmpeg opens the
+          # camera: its executable and ffmpeg carry the entitlements, the
+          # connector and the helpers none.
+          sh packaging/macos/assess.sh entitlements Applications/Masseuse.app
           ls Applications/Masseuse.app/Contents/Helpers/units/
           echo "the application took the release from GitHub, verified it and swapped it in"
 
