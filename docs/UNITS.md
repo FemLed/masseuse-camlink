@@ -120,7 +120,7 @@ them (PROTOCOL.md 7.3): `Unit`, `Capabilities`, `Status`, `Frame`,
 | `list` | none | `{"units": [Unit, ...]}` | the family's units in reach, without taking any (`estim.Lister`); `unsupported` if the family cannot list |
 | `select` | `{"unit": "<id or name>"}` | `{}` | restrict the family to one unit; `""` lifts it (`estim.Selector`). A unit of another family never matches |
 | `find` | none | `{"kind", "label", "port", "capabilities": Capabilities, "held": bool, "renewsArm": bool}` | find and open the device; `no_device` when none. A device still open from an earlier `find` is closed (restoring the unit) before the search |
-| `release` | none | `{}` | the device to zero, output stopped, its own controls live |
+| `release` | none | `{}` | the device to zero, output stopped, its own controls live; a device with several power ranges back in the one it was found in at `find` (its own setting), whatever range `arm` selected |
 | `arm` | `{"powerMode": "normal" or "high"}` | `{}` | arm in the range |
 | `renewArm` | `{"until": "<RFC 3339>"}` | `{}` | bring the device's own countdown up to the time (`estim.ArmRenewer`); only sent when `find` said `renewsArm` |
 | `status` | none | `{"status": Status}` | a full reading |
