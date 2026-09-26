@@ -180,7 +180,7 @@ the failure is a loss, reported as not connected with that reason.
 Helpers are published as their own releases, apart from the connector's,
 one release per helper family that publishes on its own:
 `https://masseuse.ai/app/units/<release>/` holds, for one helpers release,
-where `<release>` is a bare version (`1.0.3`, the first family's, at the
+where `<release>` is a bare version (`1.0.4`, the first family's, at the
 root) or a family's prefix and its version (`<family>/0.1.0`, a
 lower-case word before the version),
 
